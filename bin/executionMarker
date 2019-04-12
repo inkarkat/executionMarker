@@ -4,9 +4,10 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP -u|--update SUBJECT [-c|--context CONTEXT] [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP -d|--diff SUBJECT [-f|--fallback FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-c|--context CONTEXT] [-t|--timestamp EPOCH]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback FALLBACK-SUBJECT]'
 }
 printUsage()
 {
@@ -33,6 +34,9 @@ HELPDESCRIPTION
     --update|-u SUBJECT		Record the execution time of SUBJECT.
     --context|-c CONTEXT	Optional context for SUBJECT, e.g. the command's
 				exit status, or (single line) output.
+    --timestamp|-t EPOCH	Write EPOCH instead of the current time.
+				(For other actions, use EPOCH instead of now for
+				comparison.)
     --diff|-d SUBJECT		Determine the time difference between the last
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
@@ -57,6 +61,7 @@ multipleActionsError()
     printShortUsage "$1" >&2
     exit 2
 }
+now="$(date +%s)"
 namespace=
 group=
 subject=
@@ -72,6 +77,7 @@ do
 	--namespace|-n)	shift; namespace="$1"; shift;;
 	--group|-g)	shift; group="$1"; shift;;
 	--context|-c)	shift; context="$1"; shift;;
+	--timestamp|-t)	shift; now="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
 	--within|-w)	shift; validTimespanInSeconds="$1"; shift;;
@@ -113,9 +119,8 @@ readonly MARKER_FILESPEC="${CONFIG_DIRSPEC}/$group"
 
 writeMarker()
 {
-    local timestamp="$(date +%s)"
     [ -r "$MARKER_FILESPEC" ] || printf '# SUBJECT\tTIME STAMP\tCONTEXT\n' > "$MARKER_FILESPEC"  # Need to write at least one line so that sed does processing; can use that for a descriptive header.
-    sed -i -e "/^${literalSubjectPattern}\\t/d" -e "\$a${subject}	${timestamp}	${context}" "$MARKER_FILESPEC" || return 1
+    sed -i -e "/^${literalSubjectPattern}\\t/d" -e "\$a$subject	$now	$context" "$MARKER_FILESPEC" || return 1
 }
 
 readMarker()
@@ -150,7 +155,6 @@ timediff()
 
     readMarker || return $?
 
-    local now="$(date +%s)"
     printf '%d\n' "$((now - markerTimestamp))"
 }
 
@@ -165,7 +169,6 @@ within()
 {
     readMarker || return 4
 
-    local now="$(date +%s)"
     [ $markerTimestamp -ge $((now - validTimespanInSeconds)) ]
 }
 
