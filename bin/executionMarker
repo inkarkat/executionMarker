@@ -1,0 +1,59 @@
+#!/bin/bash
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP -u|--update SUBJECT [-c|--context CONTEXT] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP -d|--diff SUBJECT'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-c|--get-context]'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Records (and later retrieves) the (time of the) execution of a command (with an
+optional CONTEXT).
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    cat <<HELPTEXT
+    --namespace|-n NAMESPACE	Application / use case for this tool's use.
+				Determines the configuration directory.
+    --group|-g GROUP		Category in the context of the application.
+				Determines the configuration file.
+    --update|-u SUBJECT		Record the execution time of SUBJECT.
+    --context|-c CONTEXT	Optional context for SUBJECT, e.g. the command's
+				exit status, or (single line) output.
+    --diff|-d SUBJECT		Determine the time difference between the last
+				execution of SUBJECT and now. Returns 4 if no
+				record for SUBJECT exists.
+    --query|-q SUBJECT		Query whether a record for SUBJECT exists.
+    --within|-w VALID-TIMESPAN-SECONDS
+				Checks whether the time difference between the
+				last execution of SUBJECT and now is smaller or
+				equal to VALID-TIMESPAN-SECONDS. Returns 1 if it
+				is larger or 4 if no record for SUBJECT exists.
+    --get-context|-c		Prints the recorded CONTEXT for SUBJECT (if it
+				exists).
+HELPTEXT
+}
+
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+
