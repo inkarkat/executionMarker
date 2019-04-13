@@ -4,7 +4,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-n|--namespace NAMESPACE -g|--group GROUP [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-c|--context CONTEXT] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback FALLBACK-SUBJECT]'
@@ -27,8 +27,8 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
-    --namespace|-n NAMESPACE	Application / use case for this tool's use.
-				Determines the configuration directory.
+    --namespace|-n NAMESPACE	Optional application / use case for this tool's
+				use. Determines the configuration directory.
     --group|-g GROUP		Category in the context of the application.
 				Determines the configuration file.
     --update|-u SUBJECT		Record the execution time of SUBJECT.
@@ -89,7 +89,7 @@ do
 	*)		break;;
     esac
 done
-for parameter in action namespace group subject
+for parameter in action group subject
 do
     if [ -z "${!parameter}" ]; then
 	echo >&2 "ERROR: No $parameter passed."
@@ -117,7 +117,7 @@ newlineToNull()
 [ "${context/[$'\n'\\]/}" = "$context" ] || context="$(newlineToNull "$context")"
 
 
-readonly CONFIG_DIRSPEC="${XDG_CONFIG_HOME:-$HOME/.config}/$namespace"
+readonly CONFIG_DIRSPEC="${XDG_CONFIG_HOME:-$HOME/.config}${namespace:+/}$namespace"
 [ -d "$CONFIG_DIRSPEC" ] || mkdir -p -- "$CONFIG_DIRSPEC" || { printf >&2 'ERROR: Could not initialize configuration store at %s!\n' "$CONFIG_DIRSPEC"; exit 3; }
 readonly MARKER_FILESPEC="${CONFIG_DIRSPEC}/$group"
 
