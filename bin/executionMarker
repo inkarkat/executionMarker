@@ -109,8 +109,12 @@ if [ "$validTimespanInSeconds" ]; then
     fi
 fi
 literalSubjectPattern="$(printf %s "$subject" | sed -e 's/[][\$*.^/]/\\&/g')"
-subject="${subject//$'\n'/ }"
-context="${context//$'\n'/ }"
+newlineToNull()
+{
+    sed ':a; s/\\/\\\\/g; x; G; 1s/\n//; s/\n/\\x00/; h; N; s/.*\n//; ta' <<<"${1:?}"
+}
+[ "${subject/$'\n'/}" = "$subject" ] || subject="$(newlineToNull "$subject")"
+[ "${context/$'\n'/}" = "$context" ] || context="$(newlineToNull "$context")"
 
 
 readonly CONFIG_DIRSPEC="${XDG_CONFIG_HOME:-$HOME/.config}/$namespace"
@@ -120,7 +124,18 @@ readonly MARKER_FILESPEC="${CONFIG_DIRSPEC}/$group"
 writeMarker()
 {
     [ -r "$MARKER_FILESPEC" ] || printf '# SUBJECT\tTIME STAMP\tCONTEXT\n' > "$MARKER_FILESPEC"  # Need to write at least one line so that sed does processing; can use that for a descriptive header.
-    sed -i -e "/^${literalSubjectPattern}\\t/d" -e "\$a$subject	$now	$context" "$MARKER_FILESPEC" || return 1
+    local updatedLine="${subject//\\/\\\\}	$now	${context//\\/\\\\}"
+
+    # If we find the subject, duplicate its line into the hold space; this
+    # serves as a marker that we don't need to append the line at the end.
+    # On the last line, we check the hold space, and skip further processing of
+    # the line if the hold space isn't empty.
+    sed -i \
+	-e "/^${literalSubjectPattern}\\t/h" \
+	-e "/^${literalSubjectPattern}\\t/c$updatedLine"  \
+	-e '${ x; /./{ x; b; }; x; }' \
+	-e "\$a$updatedLine" \
+	"$MARKER_FILESPEC" || return 1
 }
 
 readMarker()
@@ -138,6 +153,12 @@ readMarker()
 
     IFS=$'\t' read -r readSubject markerTimestamp markerContext <<< "$line"
 }
+
+printContext()
+{
+    echo -e "${markerContext/#-/\x2d}" | tr '\0' '\n'
+}
+
 
 update()
 {
@@ -162,12 +183,13 @@ query()
 {
     readMarker || return $?
     [ "$isGetContext" ] || return 0
-    printf '%s\n' "$markerContext"
+    printContext
 }
 
 within()
 {
     readMarker || return 4
+    [ "$isGetContext" ] && printContext
 
     [ $markerTimestamp -ge $((now - validTimespanInSeconds)) ]
 }
