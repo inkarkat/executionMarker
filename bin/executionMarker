@@ -73,7 +73,7 @@ validTimespanInSeconds=
 while [ $# -ne 0 ]
 do
     case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--namespace|-n)	shift; namespace="$1"; shift;;
 	--group|-g)	shift; group="$1"; shift;;
 	--context|-c)	shift; context="$1"; shift;;
@@ -113,8 +113,8 @@ newlineToNull()
 {
     sed ':a; s/\\/\\\\/g; x; G; 1s/\n//; s/\n/\\x00/; h; N; s/.*\n//; ta' <<<"${1:?}"
 }
-[ "${subject/$'\n'/}" = "$subject" ] || subject="$(newlineToNull "$subject")"
-[ "${context/$'\n'/}" = "$context" ] || context="$(newlineToNull "$context")"
+[ "${subject/[$'\n'\\]/}" = "$subject" ] || subject="$(newlineToNull "$subject")"
+[ "${context/[$'\n'\\]/}" = "$context" ] || context="$(newlineToNull "$context")"
 
 
 readonly CONFIG_DIRSPEC="${XDG_CONFIG_HOME:-$HOME/.config}/$namespace"
