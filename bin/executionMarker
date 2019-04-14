@@ -5,7 +5,7 @@ printShortUsage()
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-c|--context CONTEXT] [-t|--timestamp EPOCH]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback FALLBACK-SUBJECT]'
 }
@@ -32,8 +32,10 @@ HELPDESCRIPTION
     --group|-g GROUP		Category in the context of the application.
 				Determines the configuration file.
     --update|-u SUBJECT		Record the execution time of SUBJECT.
-    --context|-c CONTEXT	Optional context for SUBJECT, e.g. the command's
-				exit status, or (single line) output.
+    --context|-c CONTEXT|-	Optional context for SUBJECT, e.g. the command's
+				exit status, or command output (can be
+				multi-line). With -, this is read from standard
+				input.
     --timestamp|-t EPOCH	Write EPOCH instead of the current time.
 				(For other actions, use EPOCH instead of now for
 				comparison.)
@@ -76,7 +78,14 @@ do
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--namespace|-n)	shift; namespace="$1"; shift;;
 	--group|-g)	shift; group="$1"; shift;;
-	--context|-c)	shift; context="$1"; shift;;
+	--context|-c)	shift
+			if [ "$1" = '-' ]; then
+			    context="$(< /dev/stdin)"
+			else
+			    context="$1"
+			fi
+			shift
+			;;
 	--timestamp|-t)	shift; now="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
