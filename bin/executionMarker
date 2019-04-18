@@ -118,12 +118,12 @@ if [ "$validTimespanInSeconds" ]; then
     fi
 fi
 literalSubjectPattern="$(printf %s "$subject" | sed -e 's/[][\$*.^/]/\\&/g')"
-newlineToNull()
+escapeNewline()
 {
-    sed ':a; s/\\/\\\\/g; x; G; 1s/\n//; s/\n/\\x00/; h; N; s/.*\n//; ta' <<<"${1:?}"
+    sed ':a; s/\\/\\\\/g; x; G; 1s/\n//; s/\n/\\n/; h; N; s/.*\n//; ta' <<<"${1:?}"
 }
-[ "${subject/[$'\n'\\]/}" = "$subject" ] || subject="$(newlineToNull "$subject")"
-[ "${context/[$'\n'\\]/}" = "$context" ] || context="$(newlineToNull "$context")"
+[ "${subject/[$'\n'\\]/}" = "$subject" ] || subject="$(escapeNewline "$subject")"
+[ "${context/[$'\n'\\]/}" = "$context" ] || context="$(escapeNewline "$context")"
 
 
 readonly CONFIG_DIRSPEC="${XDG_CONFIG_HOME:-$HOME/.config}${namespace:+/}$namespace"
@@ -165,7 +165,7 @@ readMarker()
 
 printContext()
 {
-    echo -e "${markerContext/#-/\x2d}" | tr '\0' '\n'
+    echo -e "${markerContext/#-/\x2d}"
 }
 
 
