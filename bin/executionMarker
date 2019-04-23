@@ -111,6 +111,10 @@ do
 	exit 2
     fi
 done
+if [ $# -gt 0 ]; then
+    printShortUsage "$0" >&2
+    exit 2
+fi
 if [ "$validTimespanInSeconds" ]; then
     if [ "$action" = 'query' ]; then
 	action='within'
