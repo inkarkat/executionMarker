@@ -5,7 +5,7 @@ printShortUsage()
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback FALLBACK-SUBJECT]'
 }
@@ -36,6 +36,8 @@ HELPDESCRIPTION
 				exit status, or command output (can be
 				multi-line). With -, this is read from standard
 				input.
+    --keep-context|-C		Just update the execution time, but keep the
+				existing context from the prior run.
     --timestamp|-t EPOCH	Write EPOCH instead of the current time.
 				(For other actions, use EPOCH instead of now for
 				comparison.)
@@ -69,6 +71,7 @@ group=
 subject=
 fallbackSubject=
 context=
+isKeepContext=
 action=
 isGetContext=
 validTimespanInSeconds=
@@ -86,6 +89,7 @@ do
 			fi
 			shift
 			;;
+	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-t)	shift; now="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
@@ -171,6 +175,11 @@ printContext()
 
 update()
 {
+    if [ "$isKeepContext" ]; then
+	readMarker
+	context="$markerContext"
+    fi
+
     writeMarker
 }
 
