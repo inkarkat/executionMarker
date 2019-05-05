@@ -196,7 +196,7 @@ timediff()
 	return 2
     fi
 
-    readMarker || return $?
+    readMarker || return 4
 
     printf '%d\n' "$((now - markerTimestamp))"
 }
