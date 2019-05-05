@@ -6,8 +6,8 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
 }
 printUsage()
 {
@@ -52,7 +52,7 @@ HELPDESCRIPTION
 				is larger or 4 if no record for SUBJECT exists.
     --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
-    --fallback|-f FALLBACK-SUBJECT
+    --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
 HELPTEXT
