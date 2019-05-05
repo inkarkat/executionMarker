@@ -189,7 +189,7 @@ update()
 
 timediff()
 {
-    if [ "$context" ]; then
+    if [ "$isGetContext" ]; then
 	echo >&2 'ERROR: Cannot query context with --diff.'
 	echo >&2
 	printShortUsage "$0" >&2
