@@ -141,7 +141,9 @@ readMarker()
 
 printContext()
 {
-    printf '%s\n' "$markerContext"
+    if [ "$isGetContext" ]; then
+	printf '%s\n' "$markerContext"
+    fi
 }
 
 
@@ -172,14 +174,13 @@ timediff()
 query()
 {
     readMarker || return $?
-    [ "$isGetContext" ] || return 0
     printContext
 }
 
 within()
 {
     readMarker || return 4
-    [ "$isGetContext" ] && printContext
+    printContext
 
     [ $markerTimestamp -ge $((now - validTimespanInSeconds)) ]
 }
