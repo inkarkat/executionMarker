@@ -14,6 +14,11 @@ dump_config()
     sed >&3 -e 's/^/#/' -- "${XDG_CONFIG_HOME}/${1:?}"
 }
 
+get_row_number()
+{
+    wc -l "${XDG_CONFIG_HOME}/${1:?}" | awk '{ print $1; }'
+}
+
 assert_config_row()
 {
     [ "$(sed -n -e "${2:?}p" "${XDG_CONFIG_HOME}/${1:?}")" = "${3?}" ]
