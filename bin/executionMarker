@@ -141,7 +141,9 @@ readMarker()
     line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"})"
     [ "$line" ] || return 1
 
-    IFS=$'\t' read -r readSubject markerTimestamp markerContext <<< "$line"
+    line="${line#*	}"  # Drop the subject.
+    markerTimestamp="${line%%	*}"
+    markerContext="${line#*	}"
 }
 
 printContext()
