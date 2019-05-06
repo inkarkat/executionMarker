@@ -126,14 +126,19 @@ if [ "$validTimespanInSeconds" ]; then
     fi
 fi
 
+database()
+{
+    miniDB --namespace "$namespace" --table "$group" "$@"
+}
+
 writeMarker()
 {
-    miniDB --schema 'SUBJECT TIMESTAMP CONTEXT' --namespace "$namespace" --table "$group" --update "$subject	$now	$context"
+    database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject	$now	$context"
 }
 
 readMarker()
 {
-    line="$(miniDB --namespace "$namespace" --table "$group" --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"})"
+    line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"})"
     [ "$line" ] || return 1
 
     IFS=$'\t' read -r readSubject markerTimestamp markerContext <<< "$line"
