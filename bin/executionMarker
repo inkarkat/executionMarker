@@ -138,10 +138,9 @@ writeMarker()
 
 readMarker()
 {
-    line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"})"
+    line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)"
     [ "$line" ] || return 1
 
-    line="${line#*	}"  # Drop the subject.
     markerTimestamp="${line%%	*}"
     markerContext="${line#*	}"
 }
