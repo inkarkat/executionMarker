@@ -96,6 +96,23 @@ HELPDESCRIPTION
 HELPTEXT
 }
 
+parseTime()
+{
+    case "$1" in
+	+([0-9])?(s))   timespan="${1%s}";;
+	+([0-9])m)	timespan=$((${1%m} * 60));;
+	+([0-9])h)	timespan=$((${1%h} * 3600));;
+	+([0-9])d)	timespan=$((${1%d} * 86400));;
+	second)		timeformat='%s';;
+	minute)	    	timeformat='%F_%H:%M';;
+	hour)	    	timeformat='%F_%H';;
+	day)	    	timeformat='%F';;
+	week)	    	timeformat='%G_%V';;
+	month)	    	timeformat='%Y_%m';;
+	year)	    	timeformat='%Y';;
+	*)		printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
+    esac
+}
 multipleActionsError()
 {
     echo >&2 "ERROR: Only one of --update, --diff --query allowed."
@@ -134,23 +151,7 @@ do
 	--format)		shift; dateFormat="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
-	--within|-w)	shift
-			case "$1" in
-			    +([0-9])?(s))   timespan="${1%s}";;
-			    +([0-9])m)	    timespan=$((${1%m} * 60));;
-			    +([0-9])h)	    timespan=$((${1%h} * 3600));;
-			    +([0-9])d)	    timespan=$((${1%d} * 86400));;
-			    second)	    timeformat='%s';;
-			    minute)	    timeformat='%F_%H:%M';;
-			    hour)	    timeformat='%F_%H';;
-			    day)	    timeformat='%F';;
-			    week)	    timeformat='%G_%V';;
-			    month)	    timeformat='%Y_%m';;
-			    year)	    timeformat='%Y';;
-			    *)		    printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
-			esac
-			shift
-			;;
+	--within|-w)	shift; parseTime "$1"; shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
