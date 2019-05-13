@@ -25,7 +25,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
 }
 printUsage()
@@ -73,7 +73,7 @@ HELPDESCRIPTION
     --within|-w VALID-TIMESPAN|TIMESLOT
 				Checks whether the time difference between the
 				last execution of SUBJECT and now is smaller or
-				equal to VALID-TIMESPAN / within TIMESLOT.
+				equal to VALID-TIMESPAN / falls inside TIMESLOT.
 				Returns 1 if it is larger / outside the slot or
 				4 if no record for SUBJECT exists.
 				TIMESPAN is NUMBER[SUFFIX], where SUFFIX may be
@@ -87,6 +87,11 @@ HELPDESCRIPTION
 				two executions within seconds, if the first
 				check happens before midnight and the next
 				shortly after midnight.
+    --without|-W VALID-TIMESPAN|TIMESLOT
+				Checks whether the time difference between the
+				last execution of SUBJECT and now is larger or
+				equal to VALID-TIMESPAN / falls outside
+				TIMESLOT.
     --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
     --fallback-subject|-f FALLBACK-SUBJECT
@@ -132,6 +137,8 @@ isGetContext=
 timespan=
 timeformat=
 unset dateFormat
+spanCompareOp=
+formatCompareOp=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -151,7 +158,8 @@ do
 	--format)		shift; dateFormat="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
-	--within|-w)	shift; parseTime "$1"; shift;;
+	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; shift;;
+	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
@@ -177,9 +185,9 @@ if [ $# -gt 0 ]; then
 fi
 if [ -n "$timespan" -o -n "$timeformat" ]; then
     if [ "$action" = 'query' ]; then
-	action='within'
+	action='timerange'
     else
-	echo >&2 "ERROR: --within can only be combined with --query"
+	echo >&2 "ERROR: --within and --without can only be combined with --query"
 	echo >&2
 	printShortUsage "$0" >&2
 	exit 2
@@ -266,7 +274,7 @@ query()
     printContext
 }
 
-within()
+timerange()
 {
     readMarker || return 4
     printContext
@@ -275,9 +283,9 @@ within()
 	local thisRun lastRun
 	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
 	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
-	[ "$lastRun" = "$thisRun" ]
+	[ "$lastRun" $formatCompareOp "$thisRun" ]
     else
-	[ $markerTimestamp -ge $((now - timespan)) ]
+	[ $markerTimestamp $spanCompareOp $((now - timespan)) ]
     fi
 }
 
