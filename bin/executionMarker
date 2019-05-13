@@ -1,4 +1,20 @@
 #!/bin/bash
+###############################################################################
+##
+# FILE:		executionMarker
+# PRODUCT:	tools
+# AUTHOR:	Ingo Karkat <ingo@karkat.de>
+# DATE CREATED:	13-Apr-2019
+#
+###############################################################################
+# CONTENTS:
+#   Records (and later retrieves) the (time of the) execution of a command (with
+#   an optional CONTEXT).
+#
+# REMARKS:
+#
+# @(#)executionMarker	$Id$	tools
+###############################################################################
 
 printShortUsage()
 {
