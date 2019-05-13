@@ -13,3 +13,9 @@ load canned_config
     [ $status -eq 0 ]
     [ "$output" = '2019-05-05_10:56:37' ]
 }
+
+@test "time of foo subject in default format is printed" {
+    run executionMarker --timestamp "$NOW" --group samples --time foo --format ''
+    [ $status -eq 0 ]
+    [ "$output" != '1557046728' ]
+}

@@ -24,7 +24,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
 }
@@ -66,8 +66,9 @@ HELPDESCRIPTION
     --time|-t SUBJECT		Return the time of the last execution of SUBJECT
 				and now. Returns 4 if no record for SUBJECT
 				exists.
-    --format DATE-FORMAT	Instead of returning the last execution time as
-				a Unix epoch, format this as DATE-FORMAT.
+    --format DATE-FORMAT|""	Instead of returning the last execution time as
+				a Unix epoch, format this as DATE-FORMAT. If
+				empty, uses the default date format.
     --query|-q SUBJECT		Query whether a record for SUBJECT exists.
     --within|-w VALID-TIMESPAN|TIMESLOT
 				Checks whether the time difference between the
@@ -113,7 +114,7 @@ action=
 isGetContext=
 timespan=
 timeformat=
-dateFormat=
+unset dateFormat
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -251,8 +252,8 @@ lasttime()
 
     readMarker || return 4
 
-    if [ "$dateFormat" ]; then
-	date --date "@$markerTimestamp" "+$dateFormat"
+    if [ -n "${dateFormat+t}" ]; then
+	date --date "@$markerTimestamp" ${dateFormat:+"+$dateFormat"}
     else
 	printf '%d\n' "$markerTimestamp"
     fi
