@@ -24,6 +24,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
 }
@@ -62,6 +63,11 @@ HELPDESCRIPTION
     --diff|-d SUBJECT		Determine the time difference between the last
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
+    --time|-t SUBJECT		Return the time of the last execution of SUBJECT
+				and now. Returns 4 if no record for SUBJECT
+				exists.
+    --format DATE-FORMAT	Instead of returning the last execution time as
+				a Unix epoch, format this as DATE-FORMAT.
     --query|-q SUBJECT		Query whether a record for SUBJECT exists.
     --within|-w VALID-TIMESPAN|TIMESLOT
 				Checks whether the time difference between the
@@ -107,6 +113,7 @@ action=
 isGetContext=
 timespan=
 timeformat=
+dateFormat=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -122,7 +129,8 @@ do
 			shift
 			;;
 	--keep-context|-C)	shift; isKeepContext=t;;
-	--timestamp|-t)	shift; now="$1"; shift;;
+	--timestamp|-t)		shift; now="$1"; shift;;
+	--format)		shift; dateFormat="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
 	--within|-w)	shift
@@ -144,6 +152,7 @@ do
 			;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
+	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
 	--query|-q)	shift; [ "$action" ] && multipleActionsError "$0"; action='query'; subject="$1"; shift;;
 	--delete|-D)	shift; [ "$action" ] && multipleActionsError "$0"; action='delete'; subject="$1"; shift;;
 	--)		shift; break;;
@@ -229,6 +238,24 @@ timediff()
     readMarker || return 4
 
     printf '%d\n' "$((now - markerTimestamp))"
+}
+
+lasttime()
+{
+    if [ "$isGetContext" ]; then
+	echo >&2 'ERROR: Cannot query context with --time.'
+	echo >&2
+	printShortUsage "$0" >&2
+	return 2
+    fi
+
+    readMarker || return 4
+
+    if [ "$dateFormat" ]; then
+	date --date "@$markerTimestamp" "+$dateFormat"
+    else
+	printf '%d\n' "$markerTimestamp"
+    fi
 }
 
 query()
