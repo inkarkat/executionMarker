@@ -25,6 +25,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
 }
 printUsage()
 {
@@ -84,6 +85,7 @@ HELPDESCRIPTION
     --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
+    --delete|-D SUBJECT		Remove the record for SUBJECT.
 HELPTEXT
 }
 
@@ -143,6 +145,7 @@ do
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--query|-q)	shift; [ "$action" ] && multipleActionsError "$0"; action='query'; subject="$1"; shift;;
+	--delete|-D)	shift; [ "$action" ] && multipleActionsError "$0"; action='delete'; subject="$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -180,6 +183,11 @@ database()
 writeMarker()
 {
     database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject	$now	$context"
+}
+
+deleteMarker()
+{
+    database --delete "$subject"
 }
 
 readMarker()
@@ -242,6 +250,11 @@ within()
     else
 	[ $markerTimestamp -ge $((now - timespan)) ]
     fi
+}
+
+delete()
+{
+    deleteMarker || return 1
 }
 
 
