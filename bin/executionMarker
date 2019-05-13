@@ -15,6 +15,7 @@
 #
 # @(#)executionMarker	$Id$	tools
 ###############################################################################
+shopt -qs extglob
 
 printShortUsage()
 {
@@ -23,7 +24,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN-SECONDS] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
 }
 printUsage()
 {
@@ -61,11 +62,23 @@ HELPDESCRIPTION
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
     --query|-q SUBJECT		Query whether a record for SUBJECT exists.
-    --within|-w VALID-TIMESPAN-SECONDS
+    --within|-w VALID-TIMESPAN|TIMESLOT
 				Checks whether the time difference between the
 				last execution of SUBJECT and now is smaller or
-				equal to VALID-TIMESPAN-SECONDS. Returns 1 if it
-				is larger or 4 if no record for SUBJECT exists.
+				equal to VALID-TIMESPAN / within TIMESLOT. Returns 1 if it
+				is larger / outside the slow or 4 if no record
+				for SUBJECT exists.
+				TIMESPAN is NUMBER[SUFFIX], where SUFFIX may be
+				's' for seconds (the default), 'm' for minutes,
+				'h' for hours or 'd' for days.
+				TIMESLOT can be one of
+				second|minute|hour|day|week|month|year, which
+				doesn't translate to a fixed minimal timespan,
+				but instead ensures that this happens at least
+				once in the slot. For example, 'day' could mean
+				two executions within seconds, if the first
+				check happens before midnight and the next
+				shortly after midnight.
     --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
     --fallback-subject|-f FALLBACK-SUBJECT
@@ -90,7 +103,8 @@ context=
 isKeepContext=
 action=
 isGetContext=
-validTimespanInSeconds=
+timespan=
+timeformat=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -109,7 +123,23 @@ do
 	--timestamp|-t)	shift; now="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
-	--within|-w)	shift; validTimespanInSeconds="$1"; shift;;
+	--within|-w)	shift
+			case "$1" in
+			    +([0-9])?(s))   timespan="${1%s}";;
+			    +([0-9])m)	    timespan=$((${1%m} * 60));;
+			    +([0-9])h)	    timespan=$((${1%h} * 3600));;
+			    +([0-9])d)	    timespan=$((${1%d} * 86400));;
+			    second)	    timeformat='%s';;
+			    minute)	    timeformat='%F_%H:%M';;
+			    hour)	    timeformat='%F_%H';;
+			    day)	    timeformat='%F';;
+			    week)	    timeformat='%G_%V';;
+			    month)	    timeformat='%Y_%m';;
+			    year)	    timeformat='%Y';;
+			    *)		    printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
+			esac
+			shift
+			;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--query|-q)	shift; [ "$action" ] && multipleActionsError "$0"; action='query'; subject="$1"; shift;;
@@ -131,7 +161,7 @@ if [ $# -gt 0 ]; then
     printShortUsage "$0" >&2
     exit 2
 fi
-if [ "$validTimespanInSeconds" ]; then
+if [ -n "$timespan" -o -n "$timeformat" ]; then
     if [ "$action" = 'query' ]; then
 	action='within'
     else
@@ -204,7 +234,14 @@ within()
     readMarker || return 4
     printContext
 
-    [ $markerTimestamp -ge $((now - validTimespanInSeconds)) ]
+    if [ "$timeformat" ]; then
+	local thisRun lastRun
+	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
+	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
+	[ "$lastRun" = "$thisRun" ]
+    else
+	[ $markerTimestamp -ge $((now - timespan)) ]
+    fi
 }
 
 
