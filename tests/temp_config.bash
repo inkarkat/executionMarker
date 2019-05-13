@@ -3,6 +3,11 @@
 export XDG_CONFIG_HOME="$BATS_TMPDIR"
 export NOW=1557046730
 
+clean_config()
+{
+    rm -f "${XDG_CONFIG_HOME}/${1:?}"
+}
+
 initialize_config()
 {
     [ "$2" = from ] || exit 2
