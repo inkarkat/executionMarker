@@ -25,7 +25,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN|second|minute|hour|day|week|month|year] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
 }
 printUsage()
@@ -80,7 +80,8 @@ HELPDESCRIPTION
 				's' for seconds (the default), 'm' for minutes,
 				'h' for hours or 'd' for days.
 				TIMESLOT can be one of
-				second|minute|hour|day|week|month|year, which
+				second|minute|hour|day|week|month|year, or
+				every N seconds|minutes|hours|days|weeks, which
 				doesn't translate to a fixed minimal timespan,
 				but instead ensures that this happens at least
 				once in the slot. For example, 'day' could mean
@@ -101,21 +102,34 @@ HELPDESCRIPTION
 HELPTEXT
 }
 
+getSpan()
+{
+    local divider="$1"; shift
+    divider="${divider#every }"
+    divider="${divider% +([a-z])}"
+    printf '%d' "$divider"
+}
 parseTime()
 {
     case "$1" in
-	+([0-9])?(s))   timespan="${1%s}";;
-	+([0-9])m)	timespan=$((${1%m} * 60));;
-	+([0-9])h)	timespan=$((${1%h} * 3600));;
-	+([0-9])d)	timespan=$((${1%d} * 86400));;
-	second)		timeformat='%s';;
-	minute)	    	timeformat='%F_%H:%M';;
-	hour)	    	timeformat='%F_%H';;
-	day)	    	timeformat='%F';;
-	week)	    	timeformat='%G_%V';;
-	month)	    	timeformat='%Y_%m';;
-	year)	    	timeformat='%Y';;
-	*)		printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
+	+([0-9])?(s))		    timespan="${1%s}";;
+	+([0-9])m)		    timespan=$((${1%m} * 60));;
+	+([0-9])h)		    timespan=$((${1%h} * 3600));;
+	+([0-9])d)		    timespan=$((${1%d} * 86400));;
+	+([0-9])w)		    timespan=$((${1%d} * 604800));;
+	second)			    timeformat='%s';;
+	minute)			    timeformat='%F_%H:%M';;
+	hour)	    		    timeformat='%F_%H';;
+	day)	    		    timeformat='%F';;
+	week)	    		    timeformat='%G_%V';;
+	month)	    		    timeformat='%Y_%m';;
+	year)	    		    timeformat='%Y';;
+	every\ +([0-9])\ seconds)   timespan="$(getSpan "$1")"; timedivider=1;;
+	every\ +([0-9])\ minutes)   timespan="$(getSpan "$1")"; timedivider=60;;
+	every\ +([0-9])\ hours)	    timespan="$(getSpan "$1")"; timedivider=3600;;
+	every\ +([0-9])\ days)	    timespan="$(getSpan "$1")"; timedivider=86400;;
+	every\ +([0-9])\ weeks)	    timespan="$(getSpan "$1")"; timedivider=604800;;
+	*)			    printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
     esac
 }
 multipleActionsError()
@@ -136,6 +150,7 @@ action=
 isGetContext=
 timespan=
 timeformat=
+timedivider=
 unset dateFormat
 spanCompareOp=
 formatCompareOp=
@@ -183,7 +198,7 @@ if [ $# -gt 0 ]; then
     printShortUsage "$0" >&2
     exit 2
 fi
-if [ -n "$timespan" -o -n "$timeformat" ]; then
+if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
     if [ "$action" = 'query' ]; then
 	action='timerange'
     else
@@ -284,6 +299,11 @@ timerange()
 	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
 	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
 	[ "$lastRun" $formatCompareOp "$thisRun" ]
+    elif [ "$timedivider" ]; then
+	local thisDivision lastDivision
+	thisDivision="$((now / timedivider))"
+	lastDivision="$((markerTimestamp / timedivider))"
+	[ $timespan $spanCompareOp $((thisDivision - lastDivision)) ]
     else
 	[ $markerTimestamp $spanCompareOp $((now - timespan)) ]
     fi
