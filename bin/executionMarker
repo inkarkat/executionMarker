@@ -25,7 +25,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
 }
 printUsage()
