@@ -8,3 +8,24 @@ load canned_config
     [ "${lines[0]}" = 'ERROR: Only one of --update, --diff, --time, --query, --delete, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed.' ]
     [ "${lines[2]%% *}" = 'Usage:' ]
 }
+
+@test "conflicting (non-)transaction actions print usage error" {
+    run executionMarker --start-read-transaction T --group some-group --query foo
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = 'ERROR: Only one of --update, --diff, --time, --query, --delete, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed.' ]
+    [ "${lines[2]%% *}" = 'Usage:' ]
+}
+
+@test "conflicting transaction actions print usage error" {
+    run executionMarker --transactional --start-read-transaction T --group some-group --query foo
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = 'ERROR: --transactional cannot be combined with the --start-read-transaction|--start-write-transaction|--upgrade-to-write-transaction|--within-transaction|--end-transaction|--abort-write-transaction set, and only one from the set can be given.' ]
+    [ "${lines[2]%% *}" = 'Usage:' ]
+}
+
+@test "start and within actions from the transaction set print usage error" {
+    run executionMarker --start-read-transaction T --within-transaction T --group some-group
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = 'ERROR: --transactional cannot be combined with the --start-read-transaction|--start-write-transaction|--upgrade-to-write-transaction|--within-transaction|--end-transaction|--abort-write-transaction set, and only one from the set can be given.' ]
+    [ "${lines[2]%% *}" = 'Usage:' ]
+}
