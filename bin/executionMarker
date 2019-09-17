@@ -119,11 +119,11 @@ parseTime()
 	+([0-9])w)		    timespan=$((${1%d} * 604800));;
 	second)			    timeformat='%s';;
 	minute)			    timeformat='%F_%H:%M';;
-	hour)	    		    timeformat='%F_%H';;
-	day)	    		    timeformat='%F';;
-	week)	    		    timeformat='%G_%V';;
-	month)	    		    timeformat='%Y_%m';;
-	year)	    		    timeformat='%Y';;
+	hour)			    timeformat='%F_%H';;
+	day)			    timeformat='%F';;
+	week)			    timeformat='%G_%V';;
+	month)			    timeformat='%Y_%m';;
+	year)			    timeformat='%Y';;
 	every\ +([0-9])\ seconds)   timespan="$(getSpan "$1")"; timedivider=1;;
 	every\ +([0-9])\ minutes)   timespan="$(getSpan "$1")"; timedivider=60;;
 	every\ +([0-9])\ hours)	    timespan="$(getSpan "$1")"; timedivider=3600;;
