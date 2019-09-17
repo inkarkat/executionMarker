@@ -192,12 +192,21 @@ parseTime()
 }
 multipleActionsError()
 {
-    echo >&2 "ERROR: Only one of --update, --diff --query allowed."
+    echo >&2 "ERROR: Only one of --update, --diff, --time, --query, --delete, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed."
+    echo >&2
+    printShortUsage "$1" >&2
+    exit 2
+}
+multipleTransactionsError()
+{
+    echo >&2 "ERROR: --transactional cannot be combined with the --start-read-transaction|--start-write-transaction|--upgrade-to-write-transaction|--within-transaction|--end-transaction|--abort-write-transaction set."
     echo >&2
     printShortUsage "$1" >&2
     exit 2
 }
 now="$(date +%s)"
+typeset -a transactionArgs=()
+typeset -a transactionSupportingArgs=()
 namespace=
 group=
 subject=
@@ -216,6 +225,12 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--transactional|-t)		[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; transactionArgs=("$1"); shift;;
+	--within-transaction)		[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; transactionArgs=("$1" "$2"); shift; shift;;
+	--start-read-transaction|--start-write-transaction|--upgrade-to-write-transaction|--end-transaction|--abort-write-transaction)
+					[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; [ "$action" ] && multipleActionsError "$0"; action='database'; subject='dummy'; transactionArgs=("$1" "$2"); shift; shift;;
+	--timeout|--transaction-timeout)
+					transactionSupportingArgs+=("$1" "$2"); shift; shift;;
 	--namespace|-n)	shift; namespace="$1"; shift;;
 	--group|-g)	shift; group="$1"; shift;;
 	--context|-c)	shift
@@ -269,7 +284,7 @@ fi
 
 database()
 {
-    miniDB --namespace "$namespace" --table "$group" "$@"
+    miniDB "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" "$@"
 }
 
 writeMarker()
