@@ -22,11 +22,13 @@ printShortUsage()
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... --start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID [--timeout SECONDS]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... [-t|--transactional|--within-transaction [--timeout SECONDS] [--transaction-timeout TX-TIMEOUT]] ...'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
 }
 printUsage()
 {
@@ -99,6 +101,62 @@ HELPDESCRIPTION
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
     --delete|-D SUBJECT		Remove the record for SUBJECT.
+TRANSACTIONS:
+    --transactional|-t		Lock GROUP during the access so that recordings
+				are serialized and concurrent retrievals can
+				only happen while no recording is under way.
+				Pass this to ensure consistency in case there
+				could ever be contention over the recording of
+				executions.
+    --timeout SECONDS		Fail if the lock to start a transaction cannot
+				be acquired within SECONDS (instead of waiting
+				indefinitely) (because another transaction is
+				still active).
+				0 means fail rather than wait if the lock cannot
+				be immediately acquired.
+    --start-read-transaction OWNER-ID
+				Start a transaction that does not record
+				executions, just retrieves them.
+				Until --end-transaction (or TX-TIMEOUT), no
+				other updates to the GROUP are possible.
+    --start-write-transaction OWNER-ID
+				Start a transaction that records executions.
+				Until --end-transaction (or TX-TIMEOUT), no
+				other reads or updates to the GROUP are
+				possible.
+    --upgrade-to-write-transaction OWNER-ID
+				Change a held transaction that was started with
+				--start-read-transaction (and hasn't become
+				shared) to also allow recordings of executions.
+				Until --end-transaction (or TX-TIMEOUT, which is
+				extended), no other reads or updates to the
+				GROUP are possible.
+    --transaction-timeout TX-TIMEOUT
+				A transition is automatically aborted if more
+				than TX-TIMEOUT (default 3) seconds passed since
+				--start-*-transaction.
+    --within-transaction OWNER-ID
+				Perform a recording / retrieval of execution(s)
+				within the transaction.
+    --end-transaction OWNER-ID
+				End the transaction, so that other clients can
+				do updates again. If this does not happen within
+				TX-TIMEOUT, another transaction may be started
+				and aborts this one.
+    --abort-write-transaction OWNER-ID
+				End the transaction, and undo any recordings
+				done within it.
+EXIT STATUS:
+    0	Complete success.
+    1	Failed to retrieve / record / delete an execution.
+    2	Bad invocation, wrong or missing command-line arguments.
+    3	Internal error or failed assertion.
+    4	The queried SUBJECT (nor FALLBACK-SUBJECT if given) / to-be-deleted
+	SUBJECT does not exist.
+    5	Time out while waiting to start a transaction.
+    6	The current transaction has taken too long (TX-TIMEOUT). On
+	modifications --within-transaction, aborts. On --end-transaction, if it
+	was pre-empted by another one, any updates have been lost.
 HELPTEXT
 }
 
