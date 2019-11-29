@@ -21,7 +21,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-t|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction|-T|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
@@ -48,6 +48,12 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
+    --basedir DIR		Set the base directory in which the NAMESPACE
+				dir / TABLE file is stored. Defaults to
+				XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}.
+    --base-type config|data|runtime|cache
+				Set the base directory based on the passed
+				characterization. The default is "config".
     --namespace|-n NAMESPACE	Optional application / use case for this tool's
 				use. Determines the configuration directory.
     --group|-g GROUP		Category in the context of the application.
@@ -226,6 +232,7 @@ multipleTransactionsError()
     exit 2
 }
 now="$(date +%s)"
+typeset -a miniDbArgs=()
 typeset -a transactionArgs=()
 typeset -a transactionSupportingArgs=()
 namespace=
@@ -246,6 +253,8 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--basedir)	miniDbArgs+=("$1" "$2"); shift; shift;;
+	--base-type)	miniDbArgs+=("$1" "$2"); shift; shift;;
 	--transactional|-t|--no-transaction|-T)
 					[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; transactionArgs=("$1"); shift;;
 	--within-transaction)		[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; transactionArgs=("$1" "$2"); shift; shift;;
@@ -307,7 +316,7 @@ fi
 
 database()
 {
-    miniDB "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" "$@"
+    miniDB "${miniDbArgs[@]}" "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" "$@"
 }
 
 writeMarker()
