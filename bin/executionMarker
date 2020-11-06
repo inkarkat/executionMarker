@@ -35,7 +35,7 @@ printUsage()
     # This is the short help when launched with no or incorrect arguments.
     # It is printed to stderr to avoid accidental processing.
     printShortUsage "$1" >&2
-    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
 }
 printLongUsage()
 {
@@ -221,14 +221,14 @@ multipleActionsError()
 {
     echo >&2 "ERROR: Only one of --update, --diff, --time, --query, --delete, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed."
     echo >&2
-    printShortUsage "$1" >&2
+    printUsage "$1" >&2
     exit 2
 }
 multipleTransactionsError()
 {
     echo >&2 "ERROR: --transactional cannot be combined with --no-transaction or the --start-read-transaction|--start-write-transaction|--upgrade-to-write-transaction|--within-transaction|--end-transaction|--abort-write-transaction set, and only one from the set can be given."
     echo >&2
-    printShortUsage "$1" >&2
+    printUsage "$1" >&2
     exit 2
 }
 now="$(date +%s)"
@@ -293,25 +293,25 @@ done
 for parameter in action group subject
 do
     if [ -z "${!parameter}" ]; then
-	echo >&2 "ERROR: No $parameter passed."
-	echo >&2
-	printShortUsage "$0" >&2
+	echo "ERROR: No $parameter passed."
+	echo
+	printUsage "$0"
 	exit 2
-    fi
+    fi >&2
 done
 if [ $# -gt 0 ]; then
-    printShortUsage "$0" >&2
+    printUsage "$0" >&2
     exit 2
 fi
 if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
     if [ "$action" = 'query' ]; then
 	action='timerange'
     else
-	echo >&2 "ERROR: --within and --without can only be combined with --query"
-	echo >&2
-	printShortUsage "$0" >&2
+	echo "ERROR: --within and --without can only be combined with --query"
+	echo
+	printUsage "$0"
 	exit 2
-    fi
+    fi >&2
 fi
 
 database()
@@ -359,11 +359,11 @@ update()
 timediff()
 {
     if [ "$isGetContext" ]; then
-	echo >&2 'ERROR: Cannot query context with --diff.'
-	echo >&2
-	printShortUsage "$0" >&2
+	echo 'ERROR: Cannot query context with --diff.'
+	echo
+	printUsage "$0"
 	return 2
-    fi
+    fi >&2
 
     readMarker || return 4
 
@@ -373,11 +373,11 @@ timediff()
 lasttime()
 {
     if [ "$isGetContext" ]; then
-	echo >&2 'ERROR: Cannot query context with --time.'
-	echo >&2
-	printShortUsage "$0" >&2
+	echo 'ERROR: Cannot query context with --time.'
+	echo
+	printUsage "$0"
 	return 2
-    fi
+    fi >&2
 
     readMarker || return 4
 
