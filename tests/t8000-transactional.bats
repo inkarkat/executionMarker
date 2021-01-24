@@ -4,7 +4,7 @@ load temp_config
 
 clear_lock()
 {
-    rm -f "${XDG_CONFIG_HOME}/.${1:?}.lock"
+    rm -f "${XDG_DATA_HOME}/.${1:?}.lock"
 }
 
 setup()

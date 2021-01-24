@@ -50,10 +50,10 @@ HELPDESCRIPTION
     cat <<HELPTEXT
     --basedir DIR		Set the base directory in which the NAMESPACE
 				dir / TABLE file is stored. Defaults to
-				XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}.
+				XDG_DATA_HOME=${XDG_DATA_HOME:-${HOME}/.local/share}.
     --base-type config|data|runtime|cache
 				Set the base directory based on the passed
-				characterization. The default is "config".
+				characterization. The default is "data".
     --namespace|-n NAMESPACE	Optional application / use case for this tool's
 				use. Determines the configuration directory.
     --group|-g GROUP		Category in the context of the application.
