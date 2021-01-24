@@ -34,6 +34,18 @@ load canned_config
     [ "$output" = "Two minutes earlier than foo." ]
 }
 
+@test "timestamp of foo that is within 10 seconds" {
+    run executionMarker --timestamp "$NOW" --group samples --query foo --within 10 --get-timestamp
+    [ $status -eq 0 ]
+    [ "$output" = '1557046728' ]
+}
+
+@test "timestamp of fox that is not within 10 seconds is printed, too" {
+    run executionMarker --timestamp "$NOW" --group samples --query fox --within 10 --get-timestamp
+    [ $status -eq 1 ]
+    [ "$output" = '1557046597' ]
+}
+
 @test "fallback subject is used when subject does not exist" {
     executionMarker --timestamp "$NOW" --group samples --query notInHere --fallback-subject bar --within 60
     ! executionMarker --timestamp "$NOW" --group samples --query notInHere --fallback-subject bar --within 10

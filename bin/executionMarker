@@ -27,7 +27,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
 }
 printUsage()
@@ -103,6 +103,8 @@ HELPDESCRIPTION
 				TIMESLOT.
     --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
+    --get-timestamp		Prints the recorded timestamp (EPOCH) for
+				SUBJECT (if it exists).
     --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
@@ -243,6 +245,7 @@ context=
 isKeepContext=
 action=
 isGetContext=
+isGetTimestamp=
 timespan=
 timeformat=
 timedivider=
@@ -277,6 +280,7 @@ do
 	--timestamp|-t)		shift; now="$1"; shift;;
 	--format)		shift; dateFormat="$1"; shift;;
 	--get-context|-x)	shift; isGetContext=t;;
+	--get-timestamp)	shift; isGetTimestamp=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
 	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; shift;;
 	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; shift;;
@@ -338,10 +342,13 @@ readMarker()
     markerContext="${line#*	}"
 }
 
-printContext()
+printAdditionalInformation()
 {
     if [ "$isGetContext" ]; then
 	printf '%s\n' "$markerContext"
+    fi
+    if [ "$isGetTimestamp" ]; then
+	printf '%s\n' "$markerTimestamp"
     fi
 }
 
@@ -363,6 +370,11 @@ timediff()
 	echo
 	printUsage "$0"
 	return 2
+    elif [ "$isGetTimestamp" ]; then
+	echo 'ERROR: Cannot query timestamp with --diff.'
+	echo
+	printUsage "$0"
+	return 2
     fi >&2
 
     readMarker || return 4
@@ -374,6 +386,11 @@ lasttime()
 {
     if [ "$isGetContext" ]; then
 	echo 'ERROR: Cannot query context with --time.'
+	echo
+	printUsage "$0"
+	return 2
+    elif [ "$isGetTimestamp" ]; then
+	echo 'ERROR: Cannot query timestamp with --time.'
 	echo
 	printUsage "$0"
 	return 2
@@ -391,13 +408,13 @@ lasttime()
 query()
 {
     readMarker || return $?
-    printContext
+    printAdditionalInformation
 }
 
 timerange()
 {
     readMarker || return 4
-    printContext
+    printAdditionalInformation
 
     if [ "$timeformat" ]; then
 	local thisRun lastRun
