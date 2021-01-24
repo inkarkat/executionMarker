@@ -344,12 +344,8 @@ readMarker()
 
 printAdditionalInformation()
 {
-    if [ "$isGetContext" ]; then
-	printf '%s\n' "$markerContext"
-    fi
-    if [ "$isGetTimestamp" ]; then
-	printf '%s\n' "$markerTimestamp"
-    fi
+    [ ! "$isGetContext" ] || printf '%s\n' "$markerContext"
+    [ ! "$isGetTimestamp" ] || printf '%s\n' "$markerTimestamp"
 }
 
 
