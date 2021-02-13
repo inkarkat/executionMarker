@@ -2,7 +2,7 @@
 ###############################################################################
 ##
 # FILE:		executionMarker
-# PRODUCT:	tools
+# PRODUCT:	executionMarker
 # AUTHOR:	Ingo Karkat <ingo@karkat.de>
 # DATE CREATED:	13-Apr-2019
 #
@@ -13,7 +13,7 @@
 #
 # REMARKS:
 #
-# @(#)executionMarker	$Id$	tools
+# @(#)executionMarker	$Id$ executionMarker
 ###############################################################################
 shopt -qs extglob
 
@@ -47,6 +47,7 @@ optional CONTEXT).
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
+    echo
     cat <<HELPTEXT
     --basedir DIR		Set the base directory in which the NAMESPACE
 				dir / TABLE file is stored. Defaults to
@@ -71,9 +72,8 @@ HELPDESCRIPTION
     --diff|-d SUBJECT		Determine the time difference between the last
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
-    --time|-t SUBJECT		Return the time of the last execution of SUBJECT
-				and now. Returns 4 if no record for SUBJECT
-				exists.
+    --time|-t SUBJECT		Return the time of the last execution of SUBJECT.
+				Returns 4 if no record for SUBJECT exists.
     --format DATE-FORMAT|""	Instead of returning the last execution time as
 				a Unix epoch, format this as DATE-FORMAT. If
 				empty, uses the default date format.
@@ -109,6 +109,7 @@ HELPDESCRIPTION
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
     --delete|-D SUBJECT		Remove the record for SUBJECT.
+
 TRANSACTIONS:
     --transactional|-t		Lock GROUP during the access so that recordings
 				are serialized and concurrent retrievals can
@@ -180,8 +181,8 @@ EXIT STATUS:
     1	Failed to retrieve / record / delete an execution.
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion.
-    4	The queried SUBJECT (nor FALLBACK-SUBJECT if given) / to-be-deleted
-	SUBJECT does not exist.
+    4	The queried SUBJECT (nor FALLBACK-SUBJECT if given) for --diff, --time,
+	--within, --without / to-be-deleted SUBJECT for --delete does not exist.
     5	Time out while waiting to start a transaction.
     6	The current transaction has taken too long (TX-TIMEOUT). On
 	modifications --within-transaction, aborts. On --end-transaction, if it
