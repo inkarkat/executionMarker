@@ -13,10 +13,27 @@ testWithContext()
     [ "$output" = "$context" ]
 }
 
+
+@test "query of context with spaces" {
+    testWithContext 'this has spaces'
+}
+
+@test "query of context with backslashes" {
+    testWithContext '\this/with\backslash'
+}
+
+@test "query of context with tab characters" {
+    testWithContext $'this\twith\ttab characters'
+}
+
 @test "query of multiline context returns all lines" {
     testWithContext 'Here is
 multi-line
 
 text	with
 multiple columns'
+}
+
+@test "query of context with newlines" {
+    testWithContext $'this\nhas\nnewlines'
 }
