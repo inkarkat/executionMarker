@@ -318,6 +318,8 @@ if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
 	exit 2
     fi >&2
 fi
+subject="${subject//$'\t'/ }"
+fallbackSubject="${fallbackSubject//$'\t'/ }"
 
 database()
 {
