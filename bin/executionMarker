@@ -29,6 +29,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
 }
 printUsage()
 {
@@ -109,6 +110,8 @@ HELPDESCRIPTION
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
     --delete|-D SUBJECT		Remove the record for SUBJECT.
+    --drop			Completely wipe all records and the
+				configuration file that contains them.
 
 TRANSACTIONS:
     --transactional|-t		Lock GROUP during the access so that recordings
@@ -222,7 +225,7 @@ parseTime()
 }
 multipleActionsError()
 {
-    echo >&2 "ERROR: Only one of --update, --diff, --time, --query, --delete, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed."
+    echo >&2 "ERROR: Only one of --update, --diff, --time, --query, --delete, --drop, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed."
     echo >&2
     printUsage "$1" >&2
     exit 2
@@ -290,6 +293,7 @@ do
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
 	--query|-q)	shift; [ "$action" ] && multipleActionsError "$0"; action='query'; subject="$1"; shift;;
 	--delete|-D)	shift; [ "$action" ] && multipleActionsError "$0"; action='delete'; subject="$1"; shift;;
+	--drop)		shift; [ "$action" ] && multipleActionsError "$0"; action='drop'; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -298,6 +302,8 @@ done
 for parameter in action group subject
 do
     if [ -z "${!parameter}" ]; then
+	[ "$parameter" = subject -a "$action" = drop ] && continue
+
 	echo "ERROR: No $parameter passed."
 	echo
 	printUsage "$0"
@@ -435,5 +441,9 @@ delete()
     deleteMarker || return 1
 }
 
+drop()
+{
+    database --drop || return 1
+}
 
 "$action"

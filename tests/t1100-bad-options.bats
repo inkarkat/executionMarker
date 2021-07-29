@@ -4,7 +4,7 @@ load canned_config
 
 assert_one_action_message()
 {
-    [ "${lines[0]}" = 'ERROR: Only one of --update, --diff, --time, --query, --delete, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed.' ]
+    [ "${lines[0]}" = 'ERROR: Only one of --update, --diff, --time, --query, --delete, --drop, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed.' ]
 }
 assert_tx_error_message()
 {
