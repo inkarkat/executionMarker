@@ -338,17 +338,7 @@ fallbackSubject="${fallbackSubject//$'\t'/ }"
 
 database()
 {
-    miniDB "${miniDbArgs[@]}" "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" "$@"
-}
-
-writeMarker()
-{
-    database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject	$now	$context"
-}
-
-incrementMarker()
-{
-    database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject" --column "TIMESTAMP=$now" --column CONTEXT++
+    miniDB "${miniDbArgs[@]}" "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" --schema 'SUBJECT TIMESTAMP CONTEXT' "$@"
 }
 
 deleteMarker()
@@ -375,13 +365,12 @@ printAdditionalInformation()
 update()
 {
     if [ "$isKeepContext" ]; then
-	readMarker
-	context="$markerContext"
-	writeMarker
+	database --update "$subject" --column "TIMESTAMP=$now"
     elif [ "$isIncrementContext" ]; then
-	incrementMarker
+	database --update "$subject" --column "TIMESTAMP=$now" --column CONTEXT++
     else
-	writeMarker
+	# Cannot use --update "$subject --column "TIMESTAMP=$now" --column "CONTEXT=$context" because the context may consist of multiple, tab-separated columns, and only the --update RECORD supports that.
+	database --update "$subject	$now	$context"
     fi
 }
 
