@@ -348,7 +348,8 @@ deleteMarker()
 
 readMarker()
 {
-    parseMarker "$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)"
+    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return 1
+    parseMarker "$line"
 }
 
 parseMarker()
