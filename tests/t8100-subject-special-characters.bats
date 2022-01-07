@@ -23,7 +23,7 @@ load temp_config
     assert_config_row "$BATS_TEST_NAME" \$ "\\\\this/with\\\\backslash	$NOW	"
 }
 
-@test "timestamp of subject that contains spaces can be queried" {
+@test "timestamp of subject that contains backslashes can be queried" {
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update '\this/with\backslash'
     run executionMarker --group "$BATS_TEST_NAME" --query '\this/with\backslash' --get-timestamp
     [ $status -eq 0 ]
