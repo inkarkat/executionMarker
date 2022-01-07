@@ -348,8 +348,13 @@ deleteMarker()
 
 readMarker()
 {
-    line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)"
-    [ "$line" ] || return 1
+    parseMarker "$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)"
+}
+
+parseMarker()
+{
+    local line="${1?}"; shift
+    [ -n "$line" ] || return 1
 
     markerTimestamp="${line%%	*}"
     markerContext="${line#*	}"
@@ -426,7 +431,11 @@ timerange()
 {
     readMarker || return 4
     printAdditionalInformation
+    calculateTimeRange
+}
 
+calculateTimeRange()
+{
     if [ "$timeformat" ]; then
 	local thisRun lastRun
 	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
