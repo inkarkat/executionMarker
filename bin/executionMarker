@@ -24,7 +24,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-t|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction|-T|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-] [-t|--timestamp EPOCH]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-t|--timestamp EPOCH]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [-f|--fallback-subject FALLBACK-SUBJECT]'
@@ -65,6 +65,8 @@ HELPDESCRIPTION
 				exit status, or command output (can be
 				multi-line). With -, this is read from standard
 				input.
+    --increment-context		Treat the context as an unsigned integer (0 if
+				empty) and increment it by one.
     --keep-context|-C		Just update the execution time, but keep the
 				existing context from the prior run.
     --timestamp|-t EPOCH	Write EPOCH instead of the current time.
@@ -246,6 +248,7 @@ group=
 subject=
 fallbackSubject=
 context=
+isIncrementContext=
 isKeepContext=
 action=
 isGetContext=
@@ -280,6 +283,7 @@ do
 			fi
 			shift
 			;;
+	--increment-context)	shift; isIncrementContext=t;;
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-t)		shift; now="$1"; shift;;
 	--format)		shift; dateFormat="$1"; shift;;
@@ -323,6 +327,11 @@ if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
 	printUsage "$0"
 	exit 2
     fi >&2
+elif [[ "${context:+t}${isKeepContext:+t}${isIncrementContext:+t}" =~ .. ]]; then
+	echo "ERROR: Can only specify one of -C|--keep-context, -c|--context, or --increment-context."
+	echo
+	printUsage "$0"
+	exit 2
 fi
 subject="${subject//$'\t'/ }"
 fallbackSubject="${fallbackSubject//$'\t'/ }"
@@ -335,6 +344,11 @@ database()
 writeMarker()
 {
     database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject	$now	$context"
+}
+
+incrementMarker()
+{
+    database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject" --column "TIMESTAMP=$now" --column CONTEXT++
 }
 
 deleteMarker()
@@ -363,9 +377,12 @@ update()
     if [ "$isKeepContext" ]; then
 	readMarker
 	context="$markerContext"
+	writeMarker
+    elif [ "$isIncrementContext" ]; then
+	incrementMarker
+    else
+	writeMarker
     fi
-
-    writeMarker
 }
 
 timediff()
