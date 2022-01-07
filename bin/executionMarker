@@ -327,6 +327,11 @@ if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
 	printUsage "$0"
 	exit 2
     fi >&2
+elif [[ "${context:+t}${isKeepContext:+t}${isIncrementContext:+t}" =~ .. ]]; then
+	echo "ERROR: Can only specify one of -C|--keep-context, -c|--context, or --increment-context."
+	echo
+	printUsage "$0"
+	exit 2
 fi
 subject="${subject//$'\t'/ }"
 fallbackSubject="${fallbackSubject//$'\t'/ }"

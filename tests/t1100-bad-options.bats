@@ -38,3 +38,10 @@ assert_tx_error_message()
     assert_tx_error_message
     [ "${lines[2]%% *}" = 'Usage:' ]
 }
+
+@test "conflicting --keep-context and --context print usage error" {
+    run executionMarker --group some-group --update 'foo' --keep-context --context 'new context'
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = "ERROR: Can only specify one of -C|--keep-context, -c|--context, or --increment-context." ]
+    [ "${lines[2]%% *}" = 'Usage:' ]
+}
