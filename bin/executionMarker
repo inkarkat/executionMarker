@@ -437,12 +437,12 @@ timerange()
 
 calculateTimeRange()
 {
-    if [ "$timeformat" ]; then
+    if [ -n "$timeformat" ]; then
 	local thisRun lastRun
 	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
 	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
 	[ "$lastRun" $formatCompareOp "$thisRun" ]
-    elif [ "$timedivider" ]; then
+    elif [ -n "$timedivider" ]; then
 	local thisDivision lastDivision
 	thisDivision="$((now / timedivider))"
 	lastDivision="$((markerTimestamp / timedivider))"
