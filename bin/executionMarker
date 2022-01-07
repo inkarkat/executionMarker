@@ -24,7 +24,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-t|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction|-T|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-t|--timestamp EPOCH]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-t|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [-f|--fallback-subject FALLBACK-SUBJECT]'
@@ -259,6 +259,7 @@ timedivider=
 unset dateFormat
 spanCompareOp=
 formatCompareOp=
+isUpdateQuery=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -287,11 +288,11 @@ do
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-t)		shift; now="$1"; shift;;
 	--format)		shift; dateFormat="$1"; shift;;
-	--get-context|-x)	shift; isGetContext=t;;
-	--get-timestamp)	shift; isGetTimestamp=t;;
+	--get-context|-x)	shift; isGetContext=t; isUpdateQuery=t;;
+	--get-timestamp)	shift; isGetTimestamp=t; isUpdateQuery=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
-	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; shift;;
-	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; shift;;
+	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; isUpdateQuery=t; shift;;
+	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; isUpdateQuery=t; shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
@@ -321,8 +322,8 @@ fi
 if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
     if [ "$action" = 'query' ]; then
 	action='timerange'
-    else
-	echo "ERROR: --within and --without can only be combined with --query"
+    elif [ "$action" != 'update' ]; then
+	echo "ERROR: --within and --without can only be combined with --query or --update."
 	echo
 	printUsage "$0"
 	exit 2
@@ -338,17 +339,7 @@ fallbackSubject="${fallbackSubject//$'\t'/ }"
 
 database()
 {
-    miniDB "${miniDbArgs[@]}" "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" "$@"
-}
-
-writeMarker()
-{
-    database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject	$now	$context"
-}
-
-incrementMarker()
-{
-    database --schema 'SUBJECT TIMESTAMP CONTEXT' --update "$subject" --column "TIMESTAMP=$now" --column CONTEXT++
+    miniDB "${miniDbArgs[@]}" "${transactionSupportingArgs[@]}" "${transactionArgs[@]}" --namespace "$namespace" --table "$group" --schema 'SUBJECT TIMESTAMP CONTEXT' "$@"
 }
 
 deleteMarker()
@@ -358,8 +349,14 @@ deleteMarker()
 
 readMarker()
 {
-    line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)"
-    [ "$line" ] || return 1
+    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return 1
+    parseMarker "$line"
+}
+
+parseMarker()
+{
+    local line="${1?}"; shift
+    [ -n "$line" ] || return 1
 
     markerTimestamp="${line%%	*}"
     markerContext="${line#*	}"
@@ -372,16 +369,29 @@ printAdditionalInformation()
 }
 
 
-update()
+updateHandlingQuery()
 {
     if [ "$isKeepContext" ]; then
-	readMarker
-	context="$markerContext"
-	writeMarker
+	database --update "$subject" --column "TIMESTAMP=$now" "$@"
     elif [ "$isIncrementContext" ]; then
-	incrementMarker
+	database --update "$subject" --column "TIMESTAMP=$now" --column CONTEXT++ "$@"
     else
-	writeMarker
+	# Cannot use --update "$subject --column "TIMESTAMP=$now" --column "CONTEXT=$context" because the context may consist of multiple, tab-separated columns, and only the --update RECORD supports that.
+	database --update "$subject	$now	$context" "$@"
+    fi
+}
+
+update()
+{
+    if [ "$isUpdateQuery" ]; then
+	local line; line="$(updateHandlingQuery --columns \*)" || return $?
+	parseMarker "$line" || return 0	# Empty record means new record here and is not a failure.
+	printAdditionalInformation
+	if [ -n "$timeformat" -o -n "$timedivider" -o -n "$spanCompareOp" ]; then
+	    calculateTimeRange
+	fi
+    else
+	updateHandlingQuery
     fi
 }
 
@@ -437,13 +447,17 @@ timerange()
 {
     readMarker || return 4
     printAdditionalInformation
+    calculateTimeRange
+}
 
-    if [ "$timeformat" ]; then
+calculateTimeRange()
+{
+    if [ -n "$timeformat" ]; then
 	local thisRun lastRun
 	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
 	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
 	[ "$lastRun" $formatCompareOp "$thisRun" ]
-    elif [ "$timedivider" ]; then
+    elif [ -n "$timedivider" ]; then
 	local thisDivision lastDivision
 	thisDivision="$((now / timedivider))"
 	lastDivision="$((markerTimestamp / timedivider))"

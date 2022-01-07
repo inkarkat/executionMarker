@@ -17,9 +17,9 @@ load temp_config
     assert_config_row "$BATS_TEST_NAME" \$ "quux	$NOW	$CONTEXT"
 }
 
-@test "update of a group with a new subject and --keep-context adds a row with empty context" {
+@test "update of a group with a new subject and --keep-context adds a row with context missing" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "quux" --keep-context
-    assert_config_row "$BATS_TEST_NAME" \$ "quux	$NOW	"
+    assert_config_row "$BATS_TEST_NAME" \$ "quux	$NOW"
 }
