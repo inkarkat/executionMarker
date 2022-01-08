@@ -466,12 +466,25 @@ printTimeDiff()
 
 	    while [[ "$diffFormat" =~ %([0-9]*)([rR]) ]]
 	    do
-		typeset -a reldateArgs=()
-		[ -n "${BASH_REMATCH[1]}" ] && reldateArgs+=(--precision "${BASH_REMATCH[1]}")
-		[ "${BASH_REMATCH[2]}" = r ] && reldateArgs+=(--short-units)
-		local timeDiffSigil=; [ $timeDiff -gt 0 ] && timeDiffSigil=+
+		if type -t reldate >/dev/null; then
+		    typeset -a reldateArgs=()
+		    [ -n "${BASH_REMATCH[1]}" ] && reldateArgs+=(--precision "${BASH_REMATCH[1]}")
+		    [ "${BASH_REMATCH[2]}" = r ] && reldateArgs+=(--short-units)
 
-		diffFormat="${diffFormat//${BASH_REMATCH[0]}/$(reldate "${reldateArgs[@]}" --timespan "${timeDiffSigil}$timeDiff")}"
+		    local timeDiffSigil=; [ $timeDiff -gt 0 ] && timeDiffSigil=+
+		    diffFormat="${diffFormat//${BASH_REMATCH[0]}/$(reldate "${reldateArgs[@]}" --timespan "${timeDiffSigil}$timeDiff")}"
+		else
+		    # Fall back to simpler %s-like rendering.
+		    local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
+		    local timeUnit=" second${timeDiffPlural}"; [ "${BASH_REMATCH[2]}" = r ] && timeUnit='s'
+		    if [ $timeDiff -gt 0 ]; then
+			diffFormat="${diffFormat//%s/$timeDiff${timeUnit} ago}"
+		    elif [ $timeDiff -lt 0 ]; then
+			diffFormat="${diffFormat//%s/in $timeDiff${timeUnit}}"
+		    else
+			diffFormat="${diffFormat//%s/just now}}"
+		    fi
+		fi
 	    done
 
 	diffFormat="${diffFormat///%}"
