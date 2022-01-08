@@ -262,7 +262,6 @@ timedivider=
 unset dateFormat
 spanCompareOp=
 formatCompareOp=
-isUpdateQuery=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -291,11 +290,11 @@ do
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-t)		shift; now="$1"; shift;;
 	--format)		shift; dateFormat="$1"; shift;;
-	--get-context|-x)	shift; additionalInformation+=(printContext); isUpdateQuery=t;;
-	--get-timestamp)	shift; additionalInformation+=(printTimestamp); isUpdateQuery=t;;
+	--get-context|-x)	shift; additionalInformation+=(printContext);;
+	--get-timestamp)	shift; additionalInformation+=(printTimestamp);;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
-	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; isUpdateQuery=t; shift;;
-	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; isUpdateQuery=t; shift;;
+	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; additionalInformation+=(printTimeRange); shift;;
+	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; additionalInformation+=(printTimeRange); shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
@@ -398,15 +397,15 @@ updateHandlingQuery()
 
 update()
 {
-    if [ "$isUpdateQuery" ]; then
+    if [ ${#additionalInformation[@]} -eq 0 ]; then
+	updateHandlingQuery
+    else
 	local line; line="$(updateHandlingQuery --columns \*)" || return $?
 	parseMarker "$line" || return 0	# Empty record means new record here and is not a failure.
 	printAdditionalInformation
 	if [ -n "$timeformat" -o -n "$timedivider" -o -n "$spanCompareOp" ]; then
 	    calculateTimeRange
 	fi
-    else
-	updateHandlingQuery
     fi
 }
 
@@ -478,6 +477,15 @@ calculateTimeRange()
     else
 	[ $markerTimestamp $spanCompareOp $((now - timespan)) ]
     fi
+}
+
+printTimeRange()
+{
+    # This function just serves as a marker in additionalInformation; it does
+    # nothing because for --within/--without, no information is printed, but the
+    # result is in the exit status (and therefore calculateTimeRange() has to
+    # run last).
+    :
 }
 
 delete()
