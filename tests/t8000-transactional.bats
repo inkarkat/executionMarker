@@ -15,7 +15,7 @@ setup()
 
 
 
-@test "transactional update of a group with a new subject adds a row" {
+@test "transactional update of a new subject adds a row" {
     executionMarker --transactional --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "quux"
     assert_config_row "$BATS_TEST_NAME" \$ "quux	$NOW	"
 }

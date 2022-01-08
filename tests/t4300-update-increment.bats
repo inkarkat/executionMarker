@@ -2,14 +2,14 @@
 
 load temp_config
 
-@test "update and context increment of a group with a new subject initializes the context to 1" {
+@test "update and context increment of a new subject initializes the context to 1" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "quux" --increment-context
     assert_config_row "$BATS_TEST_NAME" \$ "quux	$NOW	1"
 }
 
-@test "update and context increment of a group with an existing key and non-number context overwrites that row with updated timestamp and keeps the context" {
+@test "update and context increment of an existing key and non-number context overwrites that row with updated timestamp and keeps the context" {
     initialize_config "$BATS_TEST_NAME" from samples
     rowNum="$(get_row_number "$BATS_TEST_NAME")"
 
@@ -19,7 +19,7 @@ load temp_config
     updatedRowNum="$(get_row_number "$BATS_TEST_NAME")"; [ "$updatedRowNum" -eq "$rowNum" ]
 }
 
-@test "update and context increment of a group with an existing key overwrites that row with updated timestamp and incremented context" {
+@test "update and context increment of an existing key overwrites that row with updated timestamp and incremented context" {
     initialize_config "$BATS_TEST_NAME" from samples
     rowNum="$(get_row_number "$BATS_TEST_NAME")"
 

@@ -39,8 +39,15 @@ load canned_config
 }
 
 @test "context and timestamp of existing subject can be queried" {
-    run executionMarker --group samples --query foo --get-timestamp --get-context
+    run executionMarker --group samples --query foo --get-context --get-timestamp
     [ $status -eq 0 ]
     [ "$output" = 'More foo for me.
 1557046728' ]
+}
+
+@test "context and timestamp of existing subject can be queried in the order of options" {
+    run executionMarker --group samples --query foo --get-timestamp --get-context
+    [ $status -eq 0 ]
+    [ "$output" = '1557046728
+More foo for me.' ]
 }

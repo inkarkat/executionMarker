@@ -2,7 +2,7 @@
 
 load temp_config
 
-@test "update of a group with an existing key overwrites that row with updated timestamp and context" {
+@test "update of an existing key overwrites that row with updated timestamp and context" {
     initialize_config "$BATS_TEST_NAME" from samples
     rowNum="$(get_row_number "$BATS_TEST_NAME")"
 
@@ -12,7 +12,7 @@ load temp_config
     updatedRowNum="$(get_row_number "$BATS_TEST_NAME")"; [ "$updatedRowNum" -eq "$rowNum" ]
 }
 
-@test "update of a group with an existing key clears a previous context" {
+@test "update of an existing key clears a previous context" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox"
@@ -20,7 +20,7 @@ load temp_config
     assert_config_row "$BATS_TEST_NAME" 3 "fox	$NOW	"
 }
 
-@test "update of a group with an existing key and --keep-context keeps a previous context" {
+@test "update of an existing key and --keep-context keeps a previous context" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --keep-context

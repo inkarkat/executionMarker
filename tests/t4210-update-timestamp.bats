@@ -2,7 +2,7 @@
 
 load temp_config
 
-@test "update of a group with an existing key and passed timestamp overwrites that row with the timestamp and context, both can be re-read" {
+@test "update of an existing key and passed timestamp overwrites that row with the timestamp and context, both can be re-read" {
     initialize_config "$BATS_TEST_NAME" from samples
     rowNum="$(get_row_number "$BATS_TEST_NAME")"
 

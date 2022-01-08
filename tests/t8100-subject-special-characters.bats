@@ -2,7 +2,7 @@
 
 load temp_config
 
-@test "update of a group with a new subject that contains spaces adds a row" {
+@test "update of a new subject that contains spaces adds a row" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update 'this with spaces'
@@ -16,7 +16,7 @@ load temp_config
     [ "$output" = "$NOW" ]
 }
 
-@test "update of a group with a new subject that contains backslashes adds a row" {
+@test "update of a new subject that contains backslashes adds a row" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update '\this/with\backslash'
@@ -30,7 +30,7 @@ load temp_config
     [ "$output" = "$NOW" ]
 }
 
-@test "update of a group with a new subject that contains newlines adds a row" {
+@test "update of a new subject that contains newlines adds a row" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update $'this\nhas\nnewlines'
@@ -44,7 +44,7 @@ load temp_config
     [ "$output" = "$NOW" ]
 }
 
-@test "update of a group with a new subject that contains tab characters adds a row" {
+@test "update of a new subject that contains tab characters adds a row" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update $'this\twith\ttab characters'
