@@ -75,7 +75,8 @@ HELPDESCRIPTION
     --diff|-d SUBJECT		Determine the time difference between the last
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
-    --time|-t SUBJECT		Return the time of the last execution of SUBJECT.
+    --time|-t SUBJECT		Return the time (Unix epoch, unless --format is
+				given) of the last execution of SUBJECT.
 				Returns 4 if no record for SUBJECT exists.
     --format DATE-FORMAT|""	Instead of returning the last execution time as
 				a Unix epoch, format this as DATE-FORMAT. If
@@ -106,8 +107,10 @@ HELPDESCRIPTION
 				TIMESLOT.
     --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
-    --get-timestamp		Prints the recorded timestamp (EPOCH) for
-				SUBJECT (if it exists).
+    --get-timestamp		Prints the recorded timestamp (Unix epoch) for
+				SUBJECT (if it exists). Note: If this is the
+				only option to --query, you can also directly
+				use --time.
     --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
