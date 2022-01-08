@@ -186,11 +186,12 @@ TRANSACTIONS:
 				done within it.
 EXIT STATUS:
     0	Complete success.
-    1	Failed to retrieve / record / delete an execution.
+    1	Failed to access / record / delete an execution.
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion.
-    4	The queried SUBJECT (nor FALLBACK-SUBJECT if given) for --diff, --time,
-	--within, --without / to-be-deleted SUBJECT for --delete does not exist.
+    4	The queried SUBJECT (nor FALLBACK-SUBJECT if given) for --query, --diff,
+	--time, --within, --without / to-be-deleted SUBJECT for --delete does
+	not exist.
     5	Time out while waiting to start a transaction.
     6	The current transaction has taken too long (TX-TIMEOUT). On
 	modifications --within-transaction, aborts. On --end-transaction, if it
@@ -352,14 +353,14 @@ deleteMarker()
 
 readMarker()
 {
-    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return 1
+    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return $?
     parseMarker "$line"
 }
 
 parseMarker()
 {
     local line="${1?}"; shift
-    [ -n "$line" ] || return 1
+    [ -n "$line" ] || return 3	# Missing key should have been handled by the database already.
 
     markerTimestamp="${line%%	*}"
     markerContext="${line#*	}"
@@ -412,7 +413,7 @@ timediff()
 	return 2
     fi >&2
 
-    readMarker || return 4
+    readMarker || return $?
 
     printf '%d\n' "$((now - markerTimestamp))"
 }
@@ -431,7 +432,7 @@ lasttime()
 	return 2
     fi >&2
 
-    readMarker || return 4
+    readMarker || return $?
 
     if [ -n "${dateFormat+t}" ]; then
 	date --date "@$markerTimestamp" ${dateFormat:+"+$dateFormat"}
@@ -448,7 +449,7 @@ query()
 
 timerange()
 {
-    readMarker || return 4
+    readMarker || return $?
     printAdditionalInformation
     calculateTimeRange
 }
@@ -472,12 +473,12 @@ calculateTimeRange()
 
 delete()
 {
-    deleteMarker || return 1
+    deleteMarker || return $?
 }
 
 drop()
 {
-    database --drop || return 1
+    database --drop || return $?
 }
 
 "$action"

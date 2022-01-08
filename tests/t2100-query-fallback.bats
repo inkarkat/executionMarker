@@ -31,6 +31,6 @@ load canned_config
 
 @test "non-existing subject and non-existing fallback subject query fails" {
     run executionMarker --group samples --query notInHere --fallback-subject alsoNotHere
-    [ $status -eq 1 ]
+    [ $status -eq 4 ]
     [ -z "$output" ]
 }

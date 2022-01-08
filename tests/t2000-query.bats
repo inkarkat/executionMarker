@@ -4,7 +4,7 @@ load canned_config
 
 @test "non-existing subject query fails" {
     run executionMarker --group samples --query notInHere
-    [ $status -eq 1 ]
+    [ $status -eq 4 ]
     [ -z "$output" ]
 }
 
@@ -16,7 +16,7 @@ load canned_config
 
 @test "non-existing subject query of context fails" {
     run executionMarker --group samples --query notInHere --get-context
-    [ $status -eq 1 ]
+    [ $status -eq 4 ]
     [ -z "$output" ]
 }
 
@@ -28,7 +28,7 @@ load canned_config
 
 @test "non-existing subject query of timestamp fails" {
     run executionMarker --group samples --query notInHere --get-timestamp
-    [ $status -eq 1 ]
+    [ $status -eq 4 ]
     [ -z "$output" ]
 }
 
