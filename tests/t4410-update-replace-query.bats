@@ -3,7 +3,7 @@
 load temp_config
 readonly CONTEXT="Cunningly updated"
 
-@test "update of a group with an existing key overwrites that row with updated timestamp and context and returns the previous context" {
+@test "update of an existing key overwrites that row with updated timestamp and context and returns the previous context" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --context "$CONTEXT" --get-context
@@ -13,7 +13,7 @@ readonly CONTEXT="Cunningly updated"
     [ "$(executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --query "fox" --get-context)" = "$CONTEXT" ]
 }
 
-@test "update of a group with an existing key clears a previous context and returns the previous context" {
+@test "update of an existing key clears a previous context and returns the previous context" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --get-context
@@ -23,7 +23,7 @@ readonly CONTEXT="Cunningly updated"
     [ "$(executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --query "fox" --get-context)" = "" ]
 }
 
-@test "update of a group with an existing key and --keep-context keeps a previous context and returns the previous context" {
+@test "update of an existing key and --keep-context keeps a previous context and returns the previous context" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --keep-context --get-context
@@ -33,7 +33,7 @@ readonly CONTEXT="Cunningly updated"
     [ "$(executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --query "fox" --get-context)" = "Two minutes earlier than foo." ]
 }
 
-@test "update of a group with an existing key overwrites that row with updated timestamp and context and returns the previous timestamp" {
+@test "update of an existing key overwrites that row with updated timestamp and context and returns the previous timestamp" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --context "$CONTEXT" --get-timestamp
@@ -42,7 +42,7 @@ readonly CONTEXT="Cunningly updated"
     [ "$output" = "1557046597" ]
 }
 
-@test "update of a group with an existing key overwrites that row with updated timestamp and context and returns the previous context and timestamp" {
+@test "update of an existing key overwrites that row with updated timestamp and context and returns the previous context and timestamp" {
     initialize_config "$BATS_TEST_NAME" from samples
 
     run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --context "$CONTEXT" --get-context --get-timestamp
