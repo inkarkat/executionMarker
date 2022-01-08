@@ -267,6 +267,7 @@ timespan=
 timeformat=
 timedivider=
 unset dateFormat
+diffFormat=
 spanCompareOp=
 formatCompareOp=
 while [ $# -ne 0 ]
@@ -296,7 +297,7 @@ do
 	--increment-context)	shift; isIncrementContext=t;;
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-t)		shift; now="$1"; shift;;
-	--format)		shift; dateFormat="$1"; shift;;
+	--format)		shift; dateFormat="$1"; diffFormat="$1"; shift;;
 	--get-context|-x)	shift; additionalInformation+=(printContext);;
 	--get-timestamp)	shift; additionalInformation+=(printTimestamp);;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
@@ -433,39 +434,39 @@ printTimeDiff()
 {
     local timeDiff=$((now - markerTimestamp))
 
-    if [ -n "$dateFormat" ]; then
-	dateFormat="${dateFormat//%%/}"
+    if [ -n "$diffFormat" ]; then
+	diffFormat="${diffFormat//%%/}"
 
-	    while [[ "$dateFormat" =~ %S ]]
+	    while [[ "$diffFormat" =~ %S ]]
 	    do
-		dateFormat="${dateFormat//%S/$timeDiff}"
+		diffFormat="${diffFormat//%S/$timeDiff}"
 	    done
 
-	    while [[ "$dateFormat" =~ %s ]]
+	    while [[ "$diffFormat" =~ %s ]]
 	    do
 		local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
 		if [ $timeDiff -gt 0 ]; then
-		    dateFormat="${dateFormat//%s/$timeDiff second${timeDiffPlural} ago}"
+		    diffFormat="${diffFormat//%s/$timeDiff second${timeDiffPlural} ago}"
 		elif [ $timeDiff -lt 0 ]; then
-		    dateFormat="${dateFormat//%s/in $timeDiff second${timeDiffPlural}}"
+		    diffFormat="${diffFormat//%s/in $timeDiff second${timeDiffPlural}}"
 		else
-		    dateFormat="${dateFormat//%s/just now}}"
+		    diffFormat="${diffFormat//%s/just now}}"
 		fi
 	    done
 
-	    while [[ "$dateFormat" =~ %([0-9]*)([rR]) ]]
+	    while [[ "$diffFormat" =~ %([0-9]*)([rR]) ]]
 	    do
 		typeset -a reldateArgs=()
 		[ -n "${BASH_REMATCH[1]}" ] && reldateArgs+=(--precision "${BASH_REMATCH[1]}")
 		[ "${BASH_REMATCH[2]}" = r ] && reldateArgs+=(--short-units)
 		local timeDiffSigil=; [ $timeDiff -gt 0 ] && timeDiffSigil=+
 
-		dateFormat="${dateFormat//${BASH_REMATCH[0]}/$(reldate "${reldateArgs[@]}" --timespan "${timeDiffSigil}$timeDiff")}"
+		diffFormat="${diffFormat//${BASH_REMATCH[0]}/$(reldate "${reldateArgs[@]}" --timespan "${timeDiffSigil}$timeDiff")}"
 	    done
 
-	dateFormat="${dateFormat///%}"
+	diffFormat="${diffFormat///%}"
 
-	printf '%s\n' "$dateFormat"
+	printf '%s\n' "$diffFormat"
     else
 	printf '%d\n' "$timeDiff"
     fi
