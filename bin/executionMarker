@@ -255,8 +255,7 @@ context=
 isIncrementContext=
 isKeepContext=
 action=
-isGetContext=
-isGetTimestamp=
+additionalInformation=()
 timespan=
 timeformat=
 timedivider=
@@ -292,8 +291,8 @@ do
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-t)		shift; now="$1"; shift;;
 	--format)		shift; dateFormat="$1"; shift;;
-	--get-context|-x)	shift; isGetContext=t; isUpdateQuery=t;;
-	--get-timestamp)	shift; isGetTimestamp=t; isUpdateQuery=t;;
+	--get-context|-x)	shift; additionalInformation+=(printContext); isUpdateQuery=t;;
+	--get-timestamp)	shift; additionalInformation+=(printTimestamp); isUpdateQuery=t;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
 	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; isUpdateQuery=t; shift;;
 	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; isUpdateQuery=t; shift;;
@@ -366,10 +365,22 @@ parseMarker()
     markerContext="${line#*	}"
 }
 
+printContext()
+{
+    printf '%s\n' "$markerContext"
+}
+
+printTimestamp()
+{
+    printf '%s\n' "$markerTimestamp"
+}
+
 printAdditionalInformation()
 {
-    [ ! "$isGetContext" ] || printf '%s\n' "$markerContext"
-    [ ! "$isGetTimestamp" ] || printf '%s\n' "$markerTimestamp"
+    local printFunction; for printFunction in "${additionalInformation[@]}"
+    do
+	$printFunction
+    done
 }
 
 
@@ -401,13 +412,8 @@ update()
 
 timediff()
 {
-    if [ "$isGetContext" ]; then
-	echo 'ERROR: Cannot query context with --diff.'
-	echo
-	printUsage "$0"
-	return 2
-    elif [ "$isGetTimestamp" ]; then
-	echo 'ERROR: Cannot query timestamp with --diff.'
+    if [ ${#additionalInformation[@]} -gt 0 ]; then
+	echo 'ERROR: Cannot query additional information with --diff; use --query instead.'
 	echo
 	printUsage "$0"
 	return 2
@@ -424,13 +430,8 @@ printTimeDiff()
 
 lasttime()
 {
-    if [ "$isGetContext" ]; then
-	echo 'ERROR: Cannot query context with --time.'
-	echo
-	printUsage "$0"
-	return 2
-    elif [ "$isGetTimestamp" ]; then
-	echo 'ERROR: Cannot query timestamp with --time.'
+    if [ ${#additionalInformation[@]} -gt 0 ]; then
+	echo 'ERROR: Cannot query additional information with --time; use --query instead.'
 	echo
 	printUsage "$0"
 	return 2

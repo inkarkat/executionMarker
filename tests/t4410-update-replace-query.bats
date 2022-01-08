@@ -45,7 +45,7 @@ readonly CONTEXT="Cunningly updated"
 @test "update of a group with an existing key overwrites that row with updated timestamp and context and returns the previous context and timestamp" {
     initialize_config "$BATS_TEST_NAME" from samples
 
-    run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --context "$CONTEXT" --get-timestamp --get-context
+    run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --context "$CONTEXT" --get-context --get-timestamp
 
     [ $status -eq 0 ]
     [ "$output" = "Two minutes earlier than foo.
