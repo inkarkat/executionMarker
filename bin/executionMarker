@@ -414,7 +414,11 @@ timediff()
     fi >&2
 
     readMarker || return $?
+    printTimeDiff
+}
 
+printTimeDiff()
+{
     printf '%d\n' "$((now - markerTimestamp))"
 }
 
@@ -433,7 +437,11 @@ lasttime()
     fi >&2
 
     readMarker || return $?
+    printLastTime
+}
 
+printLastTime()
+{
     if [ -n "${dateFormat+t}" ]; then
 	date --date "@$markerTimestamp" ${dateFormat:+"+$dateFormat"}
     else
