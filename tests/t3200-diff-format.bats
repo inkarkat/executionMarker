@@ -85,21 +85,3 @@ load canned_config
     [ $status -eq 0 ]
     [ "$output" = '2m ago(2 minutes ago) a.k.a. (133 seconds ago) 133s' ]
 }
-
-@test "%R-formatted negative diff of fox subject is printed" {
-    run executionMarker --timestamp "$((NOW - 140))" --group samples --diff fox --format '%R'
-    [ $status -eq 0 ]
-    [ "$output" = 'in 7 seconds' ]
-}
-
-@test "%p-formatted negative diff of fox subject is printed" {
-    run executionMarker --timestamp "$((NOW - 140))" --group samples --diff fox --format '%p'
-    [ $status -eq 0 ]
-    [ "$output" = '7s' ]
-}
-
-@test "%s-formatted negative diff of fox subject is printed" {
-    run executionMarker --timestamp "$((NOW - 140))" --group samples --diff fox --format '%s'
-    [ $status -eq 0 ]
-    [ "$output" = 'in 7 seconds' ]
-}
