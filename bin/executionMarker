@@ -462,7 +462,7 @@ printTimeDiff()
 		elif [ $timeDiff -lt 0 ]; then
 		    diffFormat="${diffFormat//%s/in $((timeDiff * -1)) second${timeDiffPlural}}"
 		else
-		    diffFormat="${diffFormat//%s/just now}}"
+		    diffFormat="${diffFormat//%s/just now}"
 		fi
 	    done
 
@@ -476,6 +476,7 @@ printTimeDiff()
 		    *)	    local isTimespan=t;;
 		esac
 		[ ! "$isTimespan" ] && [ $timeDiff -lt 0 ] && let timeDiff*=-1
+
 		if type -t reldate >/dev/null; then
 		    typeset -a reldateArgs=()
 		    [ -n "$precision" ] && reldateArgs+=(--precision "$precision")
@@ -494,7 +495,7 @@ printTimeDiff()
 		    elif [ "$isTimespan" ]; then
 			diffFormat="${diffFormat//%s/no time}"
 		    else
-			diffFormat="${diffFormat//%s/just now}}"
+			diffFormat="${diffFormat//%s/just now}"
 		    fi
 		fi
 	    done
