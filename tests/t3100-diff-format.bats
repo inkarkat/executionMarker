@@ -44,6 +44,30 @@ load canned_config
     [ "$output" = 'it happened 2m and 13s ago' ]
 }
 
+@test "%P-formatted diff of fox subject is printed" {
+    run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%P'
+    [ $status -eq 0 ]
+    [ "$output" = '2 minutes' ]
+}
+
+@test "%2P-formatted diff of fox subject is printed" {
+    run executionMarker --timestamp "$NOW" --group samples --diff fox --format 'it took %2P'
+    [ $status -eq 0 ]
+    [ "$output" = 'it took 2 minutes and 13 seconds' ]
+}
+
+@test "%p-formatted diff of fox subject is printed" {
+    run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%p'
+    [ $status -eq 0 ]
+    [ "$output" = '2m' ]
+}
+
+@test "%2p-formatted diff of fox subject is printed" {
+    run executionMarker --timestamp "$NOW" --group samples --diff fox --format 'it took %2p'
+    [ $status -eq 0 ]
+    [ "$output" = 'it took 2m and 13s' ]
+}
+
 @test "format handles %% escaping in diff of fox subject is printed" {
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%%%s%%'
     [ $status -eq 0 ]

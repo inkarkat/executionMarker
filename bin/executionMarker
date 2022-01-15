@@ -24,10 +24,10 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-t|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction|-T|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-t|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R...]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [--format ...%S|%s|%[P]r|%[P]R...] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-t|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [--format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R...] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
 }
@@ -75,13 +75,14 @@ HELPDESCRIPTION
     --diff|-d SUBJECT		Determine the time difference between the last
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
-    --format ...%S|%s|%[P]r|%[P]R...
+    --format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...
 				Instead of returning the time difference as
 				seconds, format as the passed string, where %S
 				stands for the seconds, %s a simple "N seconds
 				ago", %[P]R as an adaptive relative date with a
 				maximum of P units, %[P]r likewise but with
-				short units.
+				short units, %[P]P / %[P]p as a timespan (i.e.
+				without the "ago").
     --time|-t SUBJECT		Return the time (Unix epoch, unless --format is
 				given) of the last execution of SUBJECT.
 				Returns 4 if no record for SUBJECT exists.
@@ -120,12 +121,13 @@ HELPDESCRIPTION
 				use --time.
     --get-time DATE-FORMAT|""	Prints the time (in DATE-FORMAT / the default
 				date format).
-    --get-diff ...%S|%s|%[P]r|%[P]R...
+    --get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...
 				Print the time difference as the passed string,
 				where %S stands for the seconds, %s a simple "N
 				seconds ago", %[P]R as an adaptive relative date
 				with a maximum of P units, %[P]r likewise but
-				with short units.
+				with short units, %[P]P / %[P]p as a timespan
+				(i.e. without the "ago").
     --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
@@ -464,26 +466,30 @@ printTimeDiff()
 		fi
 	    done
 
-	    while [[ "$diffFormat" =~ %([0-9]*)([rR]) ]]
+	    while [[ "$diffFormat" =~ %([0-9]*)([pPrR]) ]]
 	    do
 		local fullFormat="${BASH_REMATCH[0]}"
 		local precision="${BASH_REMATCH[1]}"
 		local format="${BASH_REMATCH[2]}"
+		case "$format" in
+		    [pP])   local isTimespan=;;
+		    *)	    local isTimespan=t;;
+		esac
 		if type -t reldate >/dev/null; then
 		    typeset -a reldateArgs=()
 		    [ -n "$precision" ] && reldateArgs+=(--precision "$precision")
 		    [[ "$format" =~ ^[[:lower:]]$ ]] && reldateArgs+=(--short-units)
 
-		    local timeDiffSigil=; [ $timeDiff -gt 0 ] && timeDiffSigil=+
+		    local timeDiffSigil=; [ "$isTimespan" ] && [ $timeDiff -gt 0 ] && timeDiffSigil=+
 		    diffFormat="${diffFormat//${fullFormat}/$(reldate "${reldateArgs[@]}" --timespan "${timeDiffSigil}$timeDiff")}"
 		else
 		    # Fall back to simpler %s-like rendering.
 		    local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
 		    local timeUnit=" second${timeDiffPlural}"; [[ "$format" =~ ^[[:lower:]]$ ]] && timeUnit='s'
 		    if [ $timeDiff -gt 0 ]; then
-			diffFormat="${diffFormat//%s/$timeDiff${timeUnit} ago}"
+			diffFormat="${diffFormat//%s/$timeDiff${timeUnit}${isTimespan:+ ago}}"
 		    elif [ $timeDiff -lt 0 ]; then
-			diffFormat="${diffFormat//%s/in $timeDiff${timeUnit}}"
+			diffFormat="${diffFormat//%s/${isTimespan:+ }in $timeDiff${timeUnit}}"
 		    else
 			diffFormat="${diffFormat//%s/just now}}"
 		    fi
