@@ -491,6 +491,8 @@ printTimeDiff()
 			diffFormat="${diffFormat//%s/$timeDiff${timeUnit}${isTimespan:+ ago}}"
 		    elif [ $timeDiff -lt 0 ]; then
 			diffFormat="${diffFormat//%s/${isTimespan:+ }in $timeDiff${timeUnit}}"
+		    elif [ "$isTimespan" ]; then
+			diffFormat="${diffFormat//%s/no time}"
 		    else
 			diffFormat="${diffFormat//%s/just now}}"
 		    fi
