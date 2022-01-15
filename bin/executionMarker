@@ -456,11 +456,11 @@ printTimeDiff()
 
 	    while [[ "$diffFormat" =~ %s ]]
 	    do
-		local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
+		local timeDiffPlural=s; [ $timeDiff -eq 1 -o $timeDiff -eq -1 ] && timeDiffPlural=
 		if [ $timeDiff -gt 0 ]; then
 		    diffFormat="${diffFormat//%s/$timeDiff second${timeDiffPlural} ago}"
 		elif [ $timeDiff -lt 0 ]; then
-		    diffFormat="${diffFormat//%s/in $timeDiff second${timeDiffPlural}}"
+		    diffFormat="${diffFormat//%s/in $((timeDiff * -1)) second${timeDiffPlural}}"
 		else
 		    diffFormat="${diffFormat//%s/just now}}"
 		fi

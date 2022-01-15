@@ -97,3 +97,9 @@ load canned_config
     [ $status -eq 0 ]
     [ "$output" = '7s' ]
 }
+
+@test "%s-formatted negative diff of fox subject is printed" {
+    run executionMarker --timestamp "$((NOW - 140))" --group samples --diff fox --format '%s'
+    [ $status -eq 0 ]
+    [ "$output" = 'in 7 seconds' ]
+}
