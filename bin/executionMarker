@@ -475,6 +475,7 @@ printTimeDiff()
 		    [pP])   local isTimespan=;;
 		    *)	    local isTimespan=t;;
 		esac
+		[ ! "$isTimespan" ] && [ $timeDiff -lt 0 ] && let timeDiff*=-1
 		if type -t reldate >/dev/null; then
 		    typeset -a reldateArgs=()
 		    [ -n "$precision" ] && reldateArgs+=(--precision "$precision")
