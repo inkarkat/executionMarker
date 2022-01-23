@@ -23,8 +23,8 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-t|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction|-T|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-t|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-x|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction|-X|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [--format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
@@ -69,7 +69,7 @@ HELPDESCRIPTION
 				empty) and increment it by one.
     --keep-context|-C		Just update the execution time, but keep the
 				existing context from the prior run.
-    --timestamp|-t EPOCH	Write EPOCH instead of the current time.
+    --timestamp|-T EPOCH	Write EPOCH instead of the current time.
 				(For other actions, use EPOCH instead of now for
 				comparison.)
     --diff|-d SUBJECT		Determine the time difference between the last
@@ -136,7 +136,7 @@ HELPDESCRIPTION
 				configuration file that contains them.
 
 TRANSACTIONS:
-    --transactional|-t		Lock GROUP during the access so that recordings
+    --transactional|-x		Lock GROUP during the access so that recordings
 				are serialized and concurrent retrievals can
 				only happen while no recording is under way.
 				Pass this to ensure consistency in case there
@@ -148,7 +148,7 @@ TRANSACTIONS:
 				another transaction is still active).
 				0 means fail rather than wait if the lock cannot
 				be acquired immediately.
-    --no-transaction|-T		Allow access to GROUP outside of a transaction.
+    --no-transaction|-X		Allow access to GROUP outside of a transaction.
 				Note that this may return inconsistent data or
 				even cause data loss, unless you know what
 				you're doing!
@@ -286,7 +286,7 @@ do
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--basedir)	miniDbArgs+=("$1" "$2"); shift; shift;;
 	--base-type)	miniDbArgs+=("$1" "$2"); shift; shift;;
-	--transactional|-t|--no-transaction|-T)
+	--transactional|-x|--no-transaction|-X)
 					[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; transactionArgs=("$1"); shift;;
 	--within-transaction)		[ ${#transactionArgs[@]} -eq 0 ] || multipleTransactionsError "$0"; transactionArgs=("$1" "$2"); shift; shift;;
 	--start-read-transaction|--start-write-transaction|--upgrade-to-write-transaction|--end-transaction|--abort-write-transaction)
@@ -306,7 +306,7 @@ do
 			;;
 	--increment-context)	shift; isIncrementContext=t;;
 	--keep-context|-C)	shift; isKeepContext=t;;
-	--timestamp|-t)		shift; now="$1"; shift;;
+	--timestamp|-T)		shift; now="$1"; shift;;
 	--format)		shift; dateFormat="$1"; diffFormat="$1"; shift;;
 	--get-context|-x)	shift; additionalInformation+=(printContext);;
 	--get-timestamp)	shift; additionalInformation+=(printTimestamp);;
