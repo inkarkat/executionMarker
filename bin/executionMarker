@@ -447,7 +447,7 @@ printTimeDiff()
     local timeDiff=$((now - markerTimestamp))
 
     if [ -n "$diffFormat" ]; then
-	diffFormat="${diffFormat//%%/}"
+	diffFormat="${diffFormat//%%/}"
 
 	    while [[ "$diffFormat" =~ %S ]]
 	    do
@@ -500,7 +500,7 @@ printTimeDiff()
 		fi
 	    done
 
-	diffFormat="${diffFormat///%}"
+	diffFormat="${diffFormat///%}"
 
 	printf '%s\n' "$diffFormat"
     else
