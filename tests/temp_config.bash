@@ -16,7 +16,7 @@ initialize_config()
 
 dump_config()
 {
-    sed >&3 -e 's/^/#/' -- "${XDG_DATA_HOME}/${1:?}"
+    prefix '#' "${XDG_DATA_HOME}/${1:?}" >&3
 }
 
 get_row_number()
