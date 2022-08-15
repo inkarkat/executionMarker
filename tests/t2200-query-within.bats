@@ -2,6 +2,12 @@
 
 load canned_config
 
+@test "non-existing group query for within fails with 4" {
+    run executionMarker --timestamp "$NOW" --group doesNotExist --query notInHere --within 10
+    [ $status -eq 4 ]
+    [ -z "$output" ]
+}
+
 @test "non-existing subject query for within fails with 4" {
     run executionMarker --timestamp "$NOW" --group samples --query notInHere --within 10
     [ $status -eq 4 ]

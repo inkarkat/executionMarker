@@ -280,6 +280,7 @@ unset dateFormat
 diffFormat=
 spanCompareOp=
 formatCompareOp=
+markerErrorStatusOverride=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -313,8 +314,8 @@ do
 	--get-time)		shift; additionalInformation+=(printLastTime); dateFormat="$1"; shift;;
 	--get-diff)		shift; additionalInformation+=(printTimeDiff); diffFormat="$1"; shift;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
-	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; additionalInformation+=(printTimeRange); shift;;
-	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; additionalInformation+=(printTimeRange); shift;;
+	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4; shift;;
+	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4; shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
@@ -371,7 +372,7 @@ deleteMarker()
 
 readMarker()
 {
-    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return $?
+    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return ${markerErrorStatusOverride:-$?}
     parseMarker "$line"
 }
 
