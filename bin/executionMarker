@@ -483,8 +483,14 @@ printTimeDiff()
 		    [ -n "$precision" ] && reldateArgs+=(--precision "$precision")
 		    [[ "$format" =~ ^[[:lower:]]$ ]] && reldateArgs+=(--short-units)
 
-		    local timeDiffSigil=; [ "$isTimespan" ] && [ $timeDiff -gt 0 ] && timeDiffSigil=+
-		    diffFormat="${diffFormat//${fullFormat}/$(reldate "${reldateArgs[@]}" --timespan "${timeDiffSigil}$timeDiff")}"
+		    let reldateTimeDiff=-1*timeDiff
+		    local reldateTimeDiffSigil=
+		    if [ "$isTimespan" ]; then
+			[ $reldateTimeDiff -gt 0 ] && reldateTimeDiffSigil=+
+		    else
+			let reldateTimeDiff*=-1
+		    fi
+		    diffFormat="${diffFormat//${fullFormat}/$(reldate "${reldateArgs[@]}" --timespan "${reldateTimeDiffSigil}$reldateTimeDiff")}"
 		else
 		    # Fall back to simpler %s-like rendering.
 		    local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
