@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load temp_config
-readonly CONTEXT="Cunningly updated"
+CONTEXT="Cunningly updated"
 
 @test "update of an existing key overwrites that row with updated timestamp and context and returns the previous context" {
     initialize_config "$BATS_TEST_NAME" from samples
