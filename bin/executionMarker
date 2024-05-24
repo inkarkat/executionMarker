@@ -372,8 +372,9 @@ deleteMarker()
 
 readMarker()
 {
-    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*)" || return ${markerErrorStatusOverride:-$?}
-    parseMarker "$line"
+    local line; line="$(database --query "$subject" ${fallbackSubject:+--fallback "$fallbackSubject"} --columns \*; status=$?; printf @; exit $status)" \
+	|| return ${markerErrorStatusOverride:-$?}
+    parseMarker "${line%@}"
 }
 
 parseMarker()
