@@ -1,0 +1,6 @@
+# SUBJECT	TIMESTAMP	CONTEXT
+true	1666666666	exit status: 0\n\n
+false	1666666666	exit status: 1\n\n
+testFunction	1716530000	exit status: 0\n\njust a test\n
+previouslyFailingFunction	1716533333	exit status: 11\n\nflaky\n
+previouslySucceedingFunction	1716511111	exit status: 0\n\nvery good\n

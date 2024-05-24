@@ -1,0 +1,206 @@
+#!/bin/bash
+set -o pipefail
+shopt -qs extglob
+
+: ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_COMMAND_JOINER=;}
+: ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END=;}
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, they can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[DIFF-ARGS ...] [-1|--stdout|-2|--stderr] [--command-id ID] -c|--command \"COMMANDLINE\" [...] | --exec SIMPLECOMMAND [...] ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END} [--exec ...] | [--] SIMPLECOMMAND [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... [--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] [-g|--group GROUP]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-x|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction OWNER-ID|-X|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Execute COMMAND, capture its output and exit status, and compare that with the
+previously recorded one.
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --stdout|-1		Only capture standard output.
+    --stderr|-2		Only capture error output.
+    --command-id ID	Pass this if the command is different (but equivalent)
+			on invocations.
+    --basedir DIR	Set the base directory in which the NAMESPACE dir /
+			TABLE file is stored. Defaults to
+			XDG_DATA_HOME=${XDG_DATA_HOME:-${HOME}/.local/share}.
+    --base-type config|data|runtime|cache|temp
+			Set the base directory based on the passed
+			characterization.
+			The default is "data" if ---group GROUP is given, else
+			"runtime".
+    --namespace|-n NAMESPACE
+			Optional application / use case for this tool's use.
+			Determines the configuration directory.
+    --group|-g GROUP	Category in the context of the application. Determines
+			the configuration file. Defaults to "interactive".
+    --command|-c CMD	Execute CMD as a command-line.
+    --exec CMD [...] ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END}	Execute CMD; all following arguments are taken to be
+			arguments to the CMD until an argument consisting of
+			'${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END}' is encountered.
+
+EXIT STATUS:
+    0	No changes in output or exit status.
+    1	Changes in output or exit status observed.
+    2	Bad invocation, wrong or missing command-line arguments.
+    3	Internal error or failed assertion.
+    5	Time out while waiting to start a transaction.
+    6	The current transaction has taken too long (TX-TIMEOUT).
+    99	First run; no previous output to compare with.
+HELPTEXT
+}
+
+typeset -a diffArgs=()
+redirPrefix='2>&1'
+redirSuffix=
+id=
+commands=
+typeset -a baseArgs=()
+typeset -a groupArgs=()
+typeset -a executionMarkerArgs=()
+typeset -a transactionArgs=()
+preAction=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--stdout|-1)	shift; redirPrefix='';;
+	--stderr|-2)	shift; redirPrefix='3>&1 1>&2 2>&3 3>&-'; redirSuffix='3>&1 1>&2 2>&3 3>&-';;
+	--command-id)	shift; id="${1:?}"; shift;;
+	--command|-c)	shift; commands+="${commands:+ $WITHOUTPUTDIFFTOPREVIOUSEXECUTION_COMMAND_JOINER }$1"; shift;;
+	--exec)		shift
+			cmd=
+			while [ $# -gt 0 -a "$1" != "$WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END" ]
+			do
+			    printf -v quotedArg %q "$1"
+			    cmd+="${cmd:+ }${quotedArg}"
+			    shift
+			done
+			if [ $# -eq 0 ]; then
+			    echo "ERROR: --exec command must be concluded with '${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END}'"; echo; printUsage "$0"
+			    exit 2
+			fi >&2
+			shift
+			commands+="${commands:+ $WITHOUTPUTDIFFTOPREVIOUSEXECUTION_COMMAND_JOINER }${cmd}"
+			;;
+	--basedir|--base-type)
+			baseArgs+=("$1" "${2:?}"); shift; shift;;
+	--group|-g)	groupArgs+=("$1" "${2:?}"); shift; shift;;
+	--namespace|-n)	executionMarkerArgs+=("$1" "${2:?}"); shift; shift;;
+	--transactional|-x)
+			shift; preAction=startTransaction;;
+	--no-transaction|-X|--silent-transaction-errors)
+			transactionArgs+=("$1"); shift;;
+	--transaction-timeout|--within-transaction|--timeout)
+			transactionArgs+=("$1" "${2:?}"); shift; shift;;
+
+	-+([aBbdEeIinqsTtuwyZ]))
+			diffArgs+=("$1"); shift;;
+	--@(brief|context|ed|expand-tabs|ignore-all-space|ignore-blank-lines|ignore-case|ignore-file-name-case|ignore-space-change|ignore-tab-expansion|ignore-trailing-space|initial-tab|left-column|minimal|no-dereference|no-ignore-file-name-case|normal|rcs|report-identical-files|side-by-side|speed-large-files|strip-trailing-cr|suppress-blank-empty|suppress-common-lines|text|unidirectional-new-file|unified))
+			diffArgs+=("$1"); shift;;
+	-[CDFlNprSUWXx])
+			diffArgs+=("$1" "${2?}"); shift; shift;;
+	--@(color|context|exclude-from|exclude|from-file|GTYPE-group-format|horizon-lines|ifdef|ignore-matching-lines|label|line-format|LTYPE-line-format|new-file|paginate|palette|recursive|show-c-function|show-function-line|starting-file|tabsize|to-file|unified|width)=*)
+			diffArgs+=("$1"); shift;;
+	--@(exclude-from|exclude|from-file|GTYPE-group-format|horizon-lines|ifdef|ignore-matching-lines|label|line-format|LTYPE-line-format|new-file|paginate|palette|recursive|show-c-function|show-function-line|starting-file|tabsize|to-file|width))
+			diffArgs+=("$1" "${2?}"); shift; shift;;
+
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -ne 0 ]; then
+    # Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
+    # undo the effects of eval.
+    printf -v quotedSimpleCommand '%q ' "$@"
+    commands+="${commands:+ $WITHOUTPUTDIFFTOPREVIOUSEXECUTION_COMMAND_JOINER }${quotedSimpleCommand% }"
+fi
+if [ -z "$commands" ]; then
+    echo "ERROR: No COMMAND(s) specified; need to pass -c|--command \"COMMANDLINE\", or --exec SIMPLECOMMAND [...] $WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END or SIMPLECOMMAND."
+    echo
+    printUsage "$0"
+    exit 2
+fi >&2
+
+if [ ${#baseArgs[@]} -eq 0 ]; then
+    if [ ${#groupArgs[@]} -gt 0 ]; then
+	# A named group is persistently stored.
+	baseArgs=(--base-type data)
+    else
+	# Use ephemeral runtime storage for interactive use.
+	baseArgs=(--base-type runtime)
+    fi
+fi
+
+# Generate ID from passed COMMAND(s).
+if [ -z "$id" ]; then
+    id="$commands"
+    label="$(commandName --eval --no-interpreter -- "$commands")"
+else
+    label="$id"
+fi
+escapedId="${id//	/ }"
+
+[ ${#groupArgs[@]} -gt 0 ] || groupArgs=(--group 'interactive')
+
+marker()
+{
+    executionMarker "${baseArgs[@]}" "${groupArgs[@]}" "${executionMarkerArgs[@]}" "$@"
+}
+
+startTransaction()
+{
+    ownerId=$$
+    transactionArgs+=(--within-transaction "$ownerId")
+    marker --start-write-transaction "${ownerId:?}" || exit $?
+    trap 'marker --end-transaction "${ownerId:?}"' EXIT
+}
+
+eval "commandOutput=\"\$($commands ${redirPrefix}; status=\$?; printf @; exit \$status)\" ${redirSuffix}"; exitStatus=$?
+
+printf -v currentOutput "exit status: %d\n\n%s" "$exitStatus" "${commandOutput%@}"
+: ${NOW:=$(printf '%(%s)T' -1)}
+currentTimestamp="$(date -d "@$NOW")"
+
+$preAction
+
+previousOutput="$(marker "${transactionArgs[@]}" --query "$escapedId" --timestamp "$NOW" --get-time '' --get-diff '%R' --get-context; status=$?; printf @; exit $status)"; status=$?
+case $status in
+    0)
+	previousOutput="${previousOutput%$'\n@'}"
+	previousTimestamp="${previousOutput%%$'\n'*}"; previousOutput="${previousOutput#${previousTimestamp}$'\n'}"
+	previousTimediff="${previousOutput%%$'\n'*}"; previousOutput="${previousOutput#${previousTimediff}$'\n'}"
+
+	diff "${diffArgs[@]}" --label "$label $previousTimestamp ($previousTimediff)" --label "$label $currentTimestamp" \
+		<(printf %s "$previousOutput") <(printf %s "$currentOutput"); status=$?
+			;;
+    1|4)    # No table or such subject
+	diff "${diffArgs[@]}" --label '(no previous execution)' --label "$label $currentTimestamp" \
+		/dev/null <(printf %s "$currentOutput")
+	status=99
+	;;
+    5|6)    # Transactional errors
+	trap '' EXIT	# Ending the transaction would likely fail as well.
+	exit $status
+	;;
+esac
+
+marker "${transactionArgs[@]}" --update "$escapedId" --timestamp "$NOW" --context "$currentOutput" || status=$?
+
+exit $status
