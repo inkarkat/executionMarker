@@ -18,6 +18,6 @@ load temp_config
 
     run executionMarker --timestamp "$NOW" --group samples --delete notInHere
 
-    [ $status -eq 1 ]
+    [ $status -eq 4 ]
     updatedRowNum="$(get_row_number "$BATS_TEST_NAME")"; [ "$updatedRowNum" -eq "$rowNum" ]
 }
