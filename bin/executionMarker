@@ -260,7 +260,7 @@ multipleTransactionsError()
     printUsage "$1" >&2
     exit 2
 }
-now="$(date +%s)"
+NOW="$(printf '%(%s)T' -1)"
 typeset -a miniDbArgs=()
 typeset -a transactionArgs=()
 typeset -a transactionSupportingArgs=()
@@ -307,7 +307,7 @@ do
 			;;
 	--increment-context)	shift; isIncrementContext=t;;
 	--keep-context|-C)	shift; isKeepContext=t;;
-	--timestamp|-T)		shift; now="$1"; shift;;
+	--timestamp|-T)		shift; NOW="$1"; shift;;
 	--format)		shift; dateFormat="$1"; diffFormat="$1"; shift;;
 	--get-context|-x)	shift; additionalInformation+=(printContext);;
 	--get-timestamp)	shift; additionalInformation+=(printTimestamp);;
@@ -408,12 +408,12 @@ printAdditionalInformation()
 updateHandlingQuery()
 {
     if [ "$isKeepContext" ]; then
-	database --update "$subject" --column "TIMESTAMP=$now" "$@"
+	database --update "$subject" --column "TIMESTAMP=$NOW" "$@"
     elif [ "$isIncrementContext" ]; then
-	database --update "$subject" --column "TIMESTAMP=$now" --column CONTEXT++ "$@"
+	database --update "$subject" --column "TIMESTAMP=$NOW" --column CONTEXT++ "$@"
     else
-	# Cannot use --update "$subject --column "TIMESTAMP=$now" --column "CONTEXT=$context" because the context may consist of multiple, tab-separated columns, and only the --update RECORD supports that.
-	database --update "$subject	$now	$context" "$@"
+	# Cannot use --update "$subject --column "TIMESTAMP=$NOW" --column "CONTEXT=$context" because the context may consist of multiple, tab-separated columns, and only the --update RECORD supports that.
+	database --update "$subject	$NOW	$context" "$@"
     fi
 }
 
@@ -446,7 +446,7 @@ timediff()
 
 printTimeDiff()
 {
-    local timeDiff=$((now - markerTimestamp))
+    local timeDiff=$((NOW - markerTimestamp))
 
     if [ -n "$diffFormat" ]; then
 	diffFormat="${diffFormat//%%/}"
@@ -555,16 +555,16 @@ calculateTimeRange()
 {
     if [ -n "$timeformat" ]; then
 	local thisRun lastRun
-	thisRun="$(date --date "@$now" "+$timeformat")" || exit 3
+	thisRun="$(date --date "@$NOW" "+$timeformat")" || exit 3
 	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
 	[ "$lastRun" $formatCompareOp "$thisRun" ]
     elif [ -n "$timedivider" ]; then
 	local thisDivision lastDivision
-	thisDivision="$((now / timedivider))"
+	thisDivision="$((NOW / timedivider))"
 	lastDivision="$((markerTimestamp / timedivider))"
 	[ $timespan $spanCompareOp $((thisDivision - lastDivision)) ]
     else
-	[ $markerTimestamp $spanCompareOp $((now - timespan)) ]
+	[ $markerTimestamp $spanCompareOp $((NOW - timespan)) ]
     fi
 }
 
