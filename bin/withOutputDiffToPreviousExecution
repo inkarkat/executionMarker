@@ -9,7 +9,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, they can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[DIFF-ARGS ...] [-1|--stdout|-2|--stderr] [--command-id ID] -c|--command \"COMMANDLINE\" [...] | --exec SIMPLECOMMAND [...] ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END} [--exec ...] | [--] SIMPLECOMMAND [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[DIFF-ARGS ...] [-1|--stdout|-2|--stderr] [--command-id ID] [--or-output|--and-output] -c|--command \"COMMANDLINE\" [...] | --exec SIMPLECOMMAND [...] ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END} [--exec ...] | [--] SIMPLECOMMAND [...] [-?|-h|--help]"
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] [-g|--group GROUP]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-x|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction OWNER-ID|-X|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
 }
@@ -36,6 +36,9 @@ HELPDESCRIPTION
     --stderr|-2		Only capture error output.
     --command-id ID	Pass this if the command is different (but equivalent)
 			on invocations.
+    --or-output		Print COMMAND's output if there are no differences.
+    --and-output	Additionally print COMMAND's output before the
+			differences.
     --basedir DIR	Set the base directory in which the NAMESPACE dir /
 			TABLE file is stored. Defaults to
 			XDG_DATA_HOME=${XDG_DATA_HOME:-${HOME}/.local/share}.
@@ -69,6 +72,7 @@ typeset -a diffArgs=()
 redirPrefix='2>&1'
 redirSuffix=
 id=
+whenOutput=
 commands=
 typeset -a baseArgs=()
 typeset -a groupArgs=()
@@ -82,6 +86,8 @@ do
 	--stdout|-1)	shift; redirPrefix='';;
 	--stderr|-2)	shift; redirPrefix='3>&1 1>&2 2>&3 3>&-'; redirSuffix='3>&1 1>&2 2>&3 3>&-';;
 	--command-id)	shift; id="${1:?}"; shift;;
+	--@(or|and)-output)
+			whenOutput="${1#--}"; whenOutput="${whenOutput%-output}"; shift;;
 	--command|-c)	shift; commands+="${commands:+ $WITHOUTPUTDIFFTOPREVIOUSEXECUTION_COMMAND_JOINER }$1"; shift;;
 	--exec)		shift
 			cmd=
@@ -173,8 +179,9 @@ startTransaction()
 }
 
 eval "commandOutput=\"\$($commands ${redirPrefix}; status=\$?; printf @; exit \$status)\" ${redirSuffix}"; exitStatus=$?
+commandOutput="${commandOutput%@}"
 
-printf -v currentOutput "exit status: %d\n\n%s" "$exitStatus" "${commandOutput%@}"
+printf -v currentOutput "exit status: %d\n\n%s" "$exitStatus" "$commandOutput"
 : ${NOW:=$(printf '%(%s)T' -1)}
 currentTimestamp="$(date -d "@$NOW")"
 
@@ -187,10 +194,24 @@ case $status in
 	previousTimestamp="${previousOutput%%$'\n'*}"; previousOutput="${previousOutput#${previousTimestamp}$'\n'}"
 	previousTimediff="${previousOutput%%$'\n'*}"; previousOutput="${previousOutput#${previousTimediff}$'\n'}"
 
-	diff "${diffArgs[@]}" --label "$label $previousTimestamp ($previousTimediff)" --label "$label $currentTimestamp" \
-		<(printf %s "$previousOutput") <(printf %s "$currentOutput"); status=$?
+	status=0; isDifferent=; [ "$currentOutput" = "$previousOutput" ] || isDifferent=t
+	case "$whenOutput" in
+	    and)    printf '%s\n' "$commandOutput";;
+	    or)	    [ "$isDifferent" ] || printf '%s' "$commandOutput";;
+	    '')	    ;;
+	    *)	    printf >&2 'ASSERT: Invalid whenOutput: %s\n' "$whenOutput"; exit 3;;
+	esac
+
+	if [ "$isDifferent" ]; then
+	    diff "${diffArgs[@]}" --label "$label $previousTimestamp ($previousTimediff)" --label "$label $currentTimestamp" \
+		    <(printf %s "$previousOutput") <(printf %s "$currentOutput"); status=$?
+	fi
 			;;
     1|4)    # No table or such subject
+	case "$whenOutput" in
+	    and)    printf '%s\n' "$commandOutput";;
+	esac
+
 	diff "${diffArgs[@]}" --label '(no previous execution)' --label "$label $currentTimestamp" \
 		/dev/null <(printf %s "$currentOutput")
 	status=99
