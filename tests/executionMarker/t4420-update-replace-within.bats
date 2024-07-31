@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load temp_config
-CONTEXT="Cunningly updated"
+readonly CONTEXT="Cunningly updated"
 
 @test "update of foo which is within 10 seconds" {
     initialize_config "$BATS_TEST_NAME" from samples

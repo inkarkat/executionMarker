@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load temp_config
-CONTEXT="Cunningly updated"
+readonly CONTEXT="Cunningly updated"
 
 @test "update of an existing key overwrites that row and returns the previous formatted time" {
     initialize_config "$BATS_TEST_NAME" from samples
