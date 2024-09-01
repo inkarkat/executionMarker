@@ -497,13 +497,13 @@ printTimeDiff()
 		    local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
 		    local timeUnit=" second${timeDiffPlural}"; [[ "$format" =~ ^[[:lower:]]$ ]] && timeUnit='s'
 		    if [ $timeDiff -gt 0 ]; then
-			diffFormat="${diffFormat//%s/$timeDiff${timeUnit}${isTimespan:+ ago}}"
+			diffFormat="${diffFormat//${fullFormat}/$timeDiff${timeUnit}${isTimespan:+ ago}}"
 		    elif [ $timeDiff -lt 0 ]; then
-			diffFormat="${diffFormat//%s/${isTimespan:+ }in $timeDiff${timeUnit}}"
+			diffFormat="${diffFormat//${fullFormat}/${isTimespan:+ }in $timeDiff${timeUnit}}"
 		    elif [ "$isTimespan" ]; then
-			diffFormat="${diffFormat//%s/no time}"
+			diffFormat="${diffFormat//${fullFormat}/no time}"
 		    else
-			diffFormat="${diffFormat//%s/just now}"
+			diffFormat="${diffFormat//${fullFormat}/just now}"
 		    fi
 		fi
 	    done
