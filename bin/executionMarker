@@ -27,7 +27,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [--format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
 }
@@ -131,6 +131,13 @@ HELPDESCRIPTION
     --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
+    --fallback-on-time|-F	Also try FALLBACK-SUBJECT for the time
+				comparison if the time difference between the
+				last execution of SUBJECT and now does not fall
+				into the range given my --within or --without.
+				In other words, the fallback is also used if the
+				last execution of SUBJECT is too long ago or too
+				recent, not just when SUBJECT doesn't exist.
     --delete|-D SUBJECT		Remove the record for SUBJECT.
     --drop			Completely wipe all records and the
 				configuration file that contains them.
@@ -268,6 +275,7 @@ namespace=
 group=
 subject=
 fallbackSubject=
+isFallbackOnTime=
 context=
 isIncrementContext=
 isKeepContext=
@@ -314,6 +322,7 @@ do
 	--get-time)		shift; additionalInformation+=(printLastTime); dateFormat="$1"; shift;;
 	--get-diff)		shift; additionalInformation+=(printTimeDiff); diffFormat="$1"; shift;;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
+	--fallback-on-time|-F)	shift; isFallbackOnTime=t;;
 	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4; shift;;
 	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4; shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
@@ -344,7 +353,7 @@ if [ $# -gt 0 ]; then
 fi
 if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
     if [ "$action" = 'query' ]; then
-	action='timerange'
+	action="timerange${isFallbackOnTime:+${fallbackSubject:+WithTimeFallback}}"
     elif [ "$action" != 'update' ]; then
 	echo "ERROR: --within and --without can only be combined with --query or --update."
 	echo
@@ -549,6 +558,37 @@ timerange()
     readMarker || return $?
     printAdditionalInformation
     calculateTimeRange
+}
+
+timerangeWithTimeFallback()
+{
+    # Use a read-only snapshot so that we see a consistent state during the multiple
+    # queries and thereby maintain the transactional integrity.
+    createView || return $?
+    readMarker || return $?
+    if calculateTimeRange; then
+	printAdditionalInformation
+    else
+	local originalMarkerTimestamp="$markerTimestamp"
+	local originalMarkerContext="$markerContext"
+	subject="$fallbackSubject"; fallbackSubject=''
+	if readMarker && calculateTimeRange; then
+	    printAdditionalInformation
+	else
+	    markerTimestamp="$originalMarkerTimestamp"
+	    markerContext="$originalMarkerContext"
+	    printAdditionalInformation
+	    return 1
+	fi
+    fi
+}
+
+createView()
+{
+    local viewName; viewName="$(database --create-view)" || return $?
+    transactionSupportingArgs=(--view "$viewName")
+    transactionArgs=()
+    [ "${DEBUG:-}" ] || trap 'database --drop 2>/dev/null' EXIT
 }
 
 calculateTimeRange()
