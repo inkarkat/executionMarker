@@ -562,6 +562,9 @@ timerange()
 
 timerangeWithTimeFallback()
 {
+    # Use a read-only snapshot so that we see a consistent state during the multiple
+    # queries and thereby maintain the transactional integrity.
+    createView || return $?
     readMarker || return $?
     if calculateTimeRange; then
 	printAdditionalInformation
@@ -578,6 +581,14 @@ timerangeWithTimeFallback()
 	    return 1
 	fi
     fi
+}
+
+createView()
+{
+    local viewName; viewName="$(database --create-view)" || return $?
+    transactionSupportingArgs=(--view "$viewName")
+    transactionArgs=()
+    [ "${DEBUG:-}" ] || trap 'database --drop 2>/dev/null' EXIT
 }
 
 calculateTimeRange()
