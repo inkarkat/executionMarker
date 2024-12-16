@@ -10,6 +10,12 @@ readonly NEGATIVE_TIMESTAMP=$((NOW - 140))
     [ "$output" = 'in 7 seconds' ]
 }
 
+@test "%R-fallback-formatted negative diff of fox subject is printed" {
+    RELDATE=doesNotExist run executionMarker --timestamp "$NEGATIVE_TIMESTAMP" --group samples --diff fox --format '%R'
+    [ $status -eq 0 ]
+    [ "$output" = ' in -7 seconds' ]
+}
+
 @test "%p-formatted negative diff of fox subject is printed" {
     run executionMarker --timestamp "$NEGATIVE_TIMESTAMP" --group samples --diff fox --format '%p'
     [ $status -eq 0 ]
