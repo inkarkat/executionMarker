@@ -17,8 +17,16 @@ last was 2 seconds ago
 }
 
 @test "query prints formatted time difference of fox subject together with formatted time and --within 10" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --query fox --get-time '%F' --within 10 --get-diff '%2r'
     [ $status -eq 1 ]
     [ "$output" = '2019-05-05
 2m and 13s ago' ]
+}
+
+@test "query prints fallback-formatted time difference of fox subject together with formatted time and --within 10" {
+    RELDATE=doesNotExist run executionMarker --timestamp "$NOW" --group samples --query fox --get-time '%F' --within 10 --get-diff '%2r'
+    [ $status -eq 1 ]
+    [ "$output" = '2019-05-05
+133s ago' ]
 }

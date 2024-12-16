@@ -10,9 +10,16 @@ readonly ZERO_TIMESTAMP=$((NOW - 133))
 }
 
 @test "%p-formatted zero diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%p'
     [ $status -eq 0 ]
     [ "$output" = 'no time' ]
+}
+
+@test "%p-fallback-formatted zero diff of fox subject is printed" {
+    RELDATE=doesNotExist run executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%p'
+    [ $status -eq 0 ]
+    [ "$output" = 'just now' ]
 }
 
 @test "%s-formatted zero diff of fox subject is printed" {

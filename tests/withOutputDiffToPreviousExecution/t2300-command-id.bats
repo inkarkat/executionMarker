@@ -5,8 +5,8 @@ load canned_config
 @test "override ID to compare against previous true run" {
     run withOutputDiffToPreviousExecution --command-id true -u --group samples -- testFunction
     [ $status -eq 1 ]
-    [ "$output" = "--- true Tue 25. Oct 2022 04:57:46 CEST (2 years ago)
-+++ true Fri 24. May 2024 08:52:30 CEST
+    [ "$output" = "--- true Tue Oct 25 02:57:46 UTC 2022 (49866884 seconds ago)
++++ true Fri May 24 06:52:30 UTC 2024
 @@ -1,2 +1,3 @@
  exit status: 0
  
@@ -17,7 +17,7 @@ load canned_config
     run withOutputDiffToPreviousExecution --command-id CUSTOM -u --group samples -- newFunction arg1 arg2 ...
     [ $status -eq 99 ]
     [ "$output" = "--- (no previous execution)
-+++ CUSTOM Fri 24. May 2024 08:52:30 CEST
++++ CUSTOM Fri May 24 06:52:30 UTC 2024
 @@ -0,0 +1,4 @@
 +exit status: 0
 +
