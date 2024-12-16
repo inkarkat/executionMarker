@@ -2,6 +2,7 @@
 
 export XDG_DATA_HOME="$BATS_TMPDIR"
 export NOW=1716533550
+export LC_ALL=C TZ=Etc/UTC
 
 cannedConfigSetup()
 {

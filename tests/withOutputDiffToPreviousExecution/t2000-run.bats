@@ -24,7 +24,7 @@ load canned_config
     run withOutputDiffToPreviousExecution -u --group samples -- newFunction arg1 arg2 ...
     [ $status -eq 99 ]
     [ "$output" = "--- (no previous execution)
-+++ newFunction Fri 24. May 2024 08:52:30 CEST
++++ newFunction Fri May 24 06:52:30 UTC 2024
 @@ -0,0 +1,4 @@
 +exit status: 0
 +
@@ -42,8 +42,8 @@ load canned_config
 @test "previouslyFailingFunction run indicates changed exit status" {
     run withOutputDiffToPreviousExecution -u --group samples -- previouslyFailingFunction
     [ $status -eq 1 ]
-    [ "$output" = "--- previouslyFailingFunction Fri 24. May 2024 08:48:53 CEST (4 minutes ago)
-+++ previouslyFailingFunction Fri 24. May 2024 08:52:30 CEST
+    [ "$output" = "--- previouslyFailingFunction Fri May 24 06:48:53 UTC 2024 (217 seconds ago)
++++ previouslyFailingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 11
 +exit status: 0
@@ -52,10 +52,11 @@ load canned_config
 }
 
 @test "previouslySucceedingFunction run indicates changed exit status and output" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run withOutputDiffToPreviousExecution -u --group samples -- previouslySucceedingFunction
     [ $status -eq 1 ]
-    [ "$output" = "--- previouslySucceedingFunction Fri 24. May 2024 02:38:31 CEST (6 hours ago)
-+++ previouslySucceedingFunction Fri 24. May 2024 08:52:30 CEST
+    [ "$output" = "--- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (22439 seconds ago)
++++ previouslySucceedingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 0
 +exit status: 42

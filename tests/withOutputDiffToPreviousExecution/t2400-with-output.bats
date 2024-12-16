@@ -5,8 +5,8 @@ load canned_config
 @test "previouslySucceedingFunction run with --or-output still indicates changed exit status and output" {
     run withOutputDiffToPreviousExecution --or-output -u --group samples -- previouslySucceedingFunction
     [ $status -eq 1 ]
-    [ "$output" = "--- previouslySucceedingFunction Fri 24. May 2024 02:38:31 CEST (6 hours ago)
-+++ previouslySucceedingFunction Fri 24. May 2024 08:52:30 CEST
+    [ "$output" = "--- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (22439 seconds ago)
++++ previouslySucceedingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 0
 +exit status: 42
@@ -25,7 +25,7 @@ load canned_config
     run withOutputDiffToPreviousExecution --or-output -u --group samples -- newFunction arg1 arg2 ...
     [ $status -eq 99 ]
     [ "$output" = "--- (no previous execution)
-+++ newFunction Fri 24. May 2024 08:52:30 CEST
++++ newFunction Fri May 24 06:52:30 UTC 2024
 @@ -0,0 +1,4 @@
 +exit status: 0
 +
@@ -38,8 +38,8 @@ load canned_config
     [ $status -eq 1 ]
     [ "$output" = "new problem
 
---- previouslySucceedingFunction Fri 24. May 2024 02:38:31 CEST (6 hours ago)
-+++ previouslySucceedingFunction Fri 24. May 2024 08:52:30 CEST
+--- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (22439 seconds ago)
++++ previouslySucceedingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 0
 +exit status: 42
@@ -61,7 +61,7 @@ load canned_config
 brand new
 
 --- (no previous execution)
-+++ newFunction Fri 24. May 2024 08:52:30 CEST
++++ newFunction Fri May 24 06:52:30 UTC 2024
 @@ -0,0 +1,4 @@
 +exit status: 0
 +
