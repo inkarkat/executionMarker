@@ -2,6 +2,8 @@
 
 _Records (and later retrieves) the (time of the) execution of a command (with an optional CONTEXT)._
 
+![Build Status](https://github.com/inkarkat/executionMarker/actions/workflows/build.yml/badge.svg)
+
 This small tool records the time (of a _subject_, which is something that happens; typically the execution of a command), and optionally also some _context_ information along with it. Assuming infrequent access by default, file locking can be optionally enabled to safely handle concurrent updates, as well as simple transactions.
 
 It can then be queried whether the subject has been recorded already (and, more important, the _time difference_ to when it last happened).
