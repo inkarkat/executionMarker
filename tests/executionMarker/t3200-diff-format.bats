@@ -21,48 +21,56 @@ load canned_config
 }
 
 @test "%R-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%R'
     [ $status -eq 0 ]
     [ "$output" = '2 minutes ago' ]
 }
 
 @test "%2R-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format 'it happened %2R'
     [ $status -eq 0 ]
     [ "$output" = 'it happened 2 minutes and 13 seconds ago' ]
 }
 
 @test "%r-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%r'
     [ $status -eq 0 ]
     [ "$output" = '2m ago' ]
 }
 
 @test "%2r-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format 'it happened %2r'
     [ $status -eq 0 ]
     [ "$output" = 'it happened 2m and 13s ago' ]
 }
 
 @test "%P-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%P'
     [ $status -eq 0 ]
     [ "$output" = '2 minutes' ]
 }
 
 @test "%2P-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format 'it took %2P'
     [ $status -eq 0 ]
     [ "$output" = 'it took 2 minutes and 13 seconds' ]
 }
 
 @test "%p-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%p'
     [ $status -eq 0 ]
     [ "$output" = '2m' ]
 }
 
 @test "%2p-formatted diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format 'it took %2p'
     [ $status -eq 0 ]
     [ "$output" = 'it took 2m and 13s' ]
@@ -81,6 +89,7 @@ load canned_config
 }
 
 @test "combination of formats diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NOW" --group samples --diff fox --format '%1r(%R) a.k.a. (%s) %Ss'
     [ $status -eq 0 ]
     [ "$output" = '2m ago(2 minutes ago) a.k.a. (133 seconds ago) 133s' ]

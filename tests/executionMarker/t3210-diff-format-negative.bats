@@ -4,6 +4,7 @@ load canned_config
 readonly NEGATIVE_TIMESTAMP=$((NOW - 140))
 
 @test "%R-formatted negative diff of fox subject is printed" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
     run executionMarker --timestamp "$NEGATIVE_TIMESTAMP" --group samples --diff fox --format '%R'
     [ $status -eq 0 ]
     [ "$output" = 'in 7 seconds' ]
