@@ -25,8 +25,8 @@ printLongUsage()
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
-Execute COMMAND, capture its output and exit status, and compare that with the
-previously recorded one.
+Execute COMMAND(s), capture its output and exit status, and compare that with
+the previously recorded one.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
@@ -56,6 +56,9 @@ HELPDESCRIPTION
     --exec CMD [...] ${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END}	Execute CMD; all following arguments are taken to be
 			arguments to the CMD until an argument consisting of
 			'${WITHOUTPUTDIFFTOPREVIOUSEXECUTION_EXEC_END}' is encountered.
+SEE ALSO:
+- pipethrough1 --diff shows differences of a file modified by COMMAND(s) instead
+  of the COMMAND(s) output.
 
 EXIT STATUS:
     0	No changes in output or exit status.
