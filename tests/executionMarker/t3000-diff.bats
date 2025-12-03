@@ -3,19 +3,16 @@
 load canned_config
 
 @test "non-existing subject query fails" {
-    run executionMarker --timestamp "$NOW" --group samples --diff notInHere
-    [ $status -eq 4 ]
-    [ -z "$output" ]
+    run -4 executionMarker --timestamp "$NOW" --group samples --diff notInHere
+    assert_output ''
 }
 
 @test "diff of foo subject is printed" {
-    run executionMarker --timestamp "$NOW" --group samples --diff foo
-    [ $status -eq 0 ]
-    [ "$output" = '2' ]
+    run -0 executionMarker --timestamp "$NOW" --group samples --diff foo
+    assert_output '2'
 }
 
 @test "diff of fallback fox subject is printed" {
-    run executionMarker --timestamp "$NOW" --group samples --diff notInHere --fallback-subject fox
-    [ $status -eq 0 ]
-    [ "$output" = '133' ]
+    run -0 executionMarker --timestamp "$NOW" --group samples --diff notInHere --fallback-subject fox
+    assert_output '133'
 }

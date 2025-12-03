@@ -7,8 +7,7 @@ load canned_config
 }
 
 @test "fox is not within the minute" {
-    run executionMarker --timestamp "$NOW" --group samples --query fox --within minute
-    [ $status -eq 1 ]
+    run -1 executionMarker --timestamp "$NOW" --group samples --query fox --within minute
 }
 
 @test "* is not within the second, minute, hour, day, but within the week, month, year" {
@@ -22,14 +21,12 @@ load canned_config
 }
 
 @test "context of fox that is not within the minute is printed, too" {
-    run executionMarker --timestamp "$NOW" --group samples --query fox --within minute --get-context
-    [ $status -eq 1 ]
-    [ "$output" = "Two minutes earlier than foo." ]
+    run -1 executionMarker --timestamp "$NOW" --group samples --query fox --within minute --get-context
+    assert_output 'Two minutes earlier than foo.'
 }
 
 @test "invalid timespan gives error" {
-    run executionMarker --timestamp "$NOW" --group samples --query foo --within millenium
-    [ $status -eq 2 ]
-    [ "${lines[0]}" = 'ERROR: Invalid TIMESPAN/TIMESLOT: "millenium".' ]
-    [ "${lines[2]%% *}" = 'Usage:' ]
+    run -2 executionMarker --timestamp "$NOW" --group samples --query foo --within millenium
+    assert_line -n 0 'ERROR: Invalid TIMESPAN/TIMESLOT: "millenium".'
+    assert_line -n 2 -e '^Usage:'
 }

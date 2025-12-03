@@ -15,8 +15,7 @@ load canned_config
 }
 
 @test "* is not within 12 hours" {
-    run executionMarker --timestamp "$NOW" --group samples --query \* --within 12h
-    [ $status -eq 1 ]
+    run -1 executionMarker --timestamp "$NOW" --group samples --query \* --within 12h
 }
 
 @test "fox is within 4 days" {
@@ -24,8 +23,7 @@ load canned_config
 }
 
 @test "invalid time unit gives error" {
-    run executionMarker --timestamp "$NOW" --group samples --query foo --within 12x
-    [ $status -eq 2 ]
-    [ "${lines[0]}" = 'ERROR: Invalid TIMESPAN/TIMESLOT: "12x".' ]
-    [ "${lines[2]%% *}" = 'Usage:' ]
+    run -2 executionMarker --timestamp "$NOW" --group samples --query foo --within 12x
+    assert_line -n 0 'ERROR: Invalid TIMESPAN/TIMESLOT: "12x".'
+    assert_line -n 2 -e '^Usage:'
 }

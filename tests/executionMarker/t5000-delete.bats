@@ -16,8 +16,6 @@ load temp_config
     initialize_config "$BATS_TEST_NAME" from samples
     rowNum="$(get_row_number "$BATS_TEST_NAME")"
 
-    run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --delete notInHere
-
-    [ $status -eq 4 ]
+    run -4 executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --delete notInHere
     updatedRowNum="$(get_row_number "$BATS_TEST_NAME")"; [ "$updatedRowNum" -eq "$rowNum" ]
 }

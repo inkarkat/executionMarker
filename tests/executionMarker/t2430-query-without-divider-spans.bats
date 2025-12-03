@@ -22,8 +22,7 @@ load canned_config
 }
 
 @test "fox is not without every 180 seconds" {
-    run executionMarker --timestamp "$NOW" --group samples --query fox --without 'every 180 seconds'
-    [ $status -eq 1 ]
+    run -1 executionMarker --timestamp "$NOW" --group samples --query fox --without 'every 180 seconds'
 }
 
 @test "* is without every 2 seconds, minutes, hours, 1 days, but not without every 2, 3, 4 days, 2 weeks" {

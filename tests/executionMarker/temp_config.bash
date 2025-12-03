@@ -1,5 +1,7 @@
 #!/bin/bash
 
+load fixture
+
 export XDG_DATA_HOME="$BATS_TMPDIR"
 export NOW=1557046730
 

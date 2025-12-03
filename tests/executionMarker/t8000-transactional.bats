@@ -22,24 +22,21 @@ setup()
 
 @test "query and update a subject within an upgraded write transaction, then abort it" {
     executionMarker --start-read-transaction T --group "$BATS_TEST_NAME"
-    run executionMarker --within-transaction T --group "$BATS_TEST_NAME" --query foo --get-context
-    [ $status -eq 0 ]
-    [ "$output" = 'More foo for me.' ]
+    run -0 executionMarker --within-transaction T --group "$BATS_TEST_NAME" --query foo --get-context
+    assert_output 'More foo for me.'
 
     executionMarker --upgrade-to-write-transaction T --group "$BATS_TEST_NAME"
     executionMarker --within-transaction T --timestamp "$NOW" --group "$BATS_TEST_NAME" --update foo --context "Transactionally updated"
     assert_config_row "$BATS_TEST_NAME" 2 "foo	$NOW	Transactionally updated"
 
-    run executionMarker --within-transaction T --timestamp "$NOW" --group "$BATS_TEST_NAME" --query foo --get-context
-    [ $status -eq 0 ]
-    [ "$output" = 'Transactionally updated' ]
+    run -0 executionMarker --within-transaction T --timestamp "$NOW" --group "$BATS_TEST_NAME" --query foo --get-context
+    assert_output 'Transactionally updated'
 
     executionMarker --abort-write-transaction T --group "$BATS_TEST_NAME"
     assert_config_row "$BATS_TEST_NAME" 2 "foo	1557046728	More foo for me."
 }
 
 @test "transactional fallback subject is used when subject is not within 10 seconds and it is within" {
-    run executionMarker --transactional --timestamp "$NOW" --group "$BATS_TEST_NAME" --query fox --fallback-subject foo --fallback-on-time --within 10 --get-context
-    [ $status -eq 0 ]
-    [ "$output" = 'More foo for me.' ]
+    run -0 executionMarker --transactional --timestamp "$NOW" --group "$BATS_TEST_NAME" --query fox --fallback-subject foo --fallback-on-time --within 10 --get-context
+    assert_output 'More foo for me.'
 }

@@ -11,9 +11,8 @@ load temp_config
 
 @test "timestamp of subject that contains spaces can be queried" {
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update 'this with spaces'
-    run executionMarker --group "$BATS_TEST_NAME" --query 'this with spaces' --get-timestamp
-    [ $status -eq 0 ]
-    [ "$output" = "$NOW" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query 'this with spaces' --get-timestamp
+    assert_output "$NOW"
 }
 
 @test "update of a new subject that contains backslashes adds a row" {
@@ -25,9 +24,8 @@ load temp_config
 
 @test "timestamp of subject that contains backslashes can be queried" {
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update '\this/with\backslash'
-    run executionMarker --group "$BATS_TEST_NAME" --query '\this/with\backslash' --get-timestamp
-    [ $status -eq 0 ]
-    [ "$output" = "$NOW" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query '\this/with\backslash' --get-timestamp
+    assert_output "$NOW"
 }
 
 @test "update of a new subject that contains newlines adds a row" {
@@ -39,9 +37,8 @@ load temp_config
 
 @test "timestamp of subject that contains newlines can be queried" {
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update $'this\nhas\nnewlines'
-    run executionMarker --group "$BATS_TEST_NAME" --query $'this\nhas\nnewlines' --get-timestamp
-    [ $status -eq 0 ]
-    [ "$output" = "$NOW" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query $'this\nhas\nnewlines' --get-timestamp
+    assert_output "$NOW"
 }
 
 @test "update of a new subject that contains tab characters adds a row" {
@@ -53,14 +50,12 @@ load temp_config
 
 @test "timestamp of subject that contains tab characters can be queried" {
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update $'this\twith\ttab characters'
-    run executionMarker --group "$BATS_TEST_NAME" --query $'this\twith\ttab characters' --get-timestamp
-    [ $status -eq 0 ]
-    [ "$output" = "$NOW" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query $'this\twith\ttab characters' --get-timestamp
+    assert_output "$NOW"
 }
 
 @test "timestamp of fallback subject that contains tab characters can be queried" {
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update $'this\twith\ttab characters'
-    run executionMarker --group "$BATS_TEST_NAME" --query notInHere --fallback-subject $'this\twith\ttab characters' --get-timestamp
-    [ $status -eq 0 ]
-    [ "$output" = "$NOW" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query notInHere --fallback-subject $'this\twith\ttab characters' --get-timestamp
+    assert_output "$NOW"
 }

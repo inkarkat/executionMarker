@@ -22,8 +22,7 @@ load canned_config
 }
 
 @test "fox is not within every 90 seconds" {
-    run executionMarker --timestamp "$NOW" --group samples --query fox --within 'every 90 seconds'
-    [ $status -eq 1 ]
+    run -1 executionMarker --timestamp "$NOW" --group samples --query fox --within 'every 90 seconds'
 }
 
 @test "* is not within every 2 seconds, minutes, hours, 1 days, but within every 2, 3, 4 days, 2 weeks" {

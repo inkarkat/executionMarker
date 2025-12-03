@@ -4,26 +4,22 @@ load canned_config
 readonly ZERO_TIMESTAMP=$((NOW - 133))
 
 @test "%R-formatted zero diff of fox subject is printed" {
-    run executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%R'
-    [ $status -eq 0 ]
-    [ "$output" = 'no time' ]
+    run -0 executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%R'
+    assert_output 'no time'
 }
 
 @test "%p-formatted zero diff of fox subject is printed" {
     type -t reldate >/dev/null || skip 'reldate is not available'
-    run executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%p'
-    [ $status -eq 0 ]
-    [ "$output" = 'no time' ]
+    run -0 executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%p'
+    assert_output 'no time'
 }
 
 @test "%p-fallback-formatted zero diff of fox subject is printed" {
-    RELDATE=doesNotExist run executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%p'
-    [ $status -eq 0 ]
-    [ "$output" = 'just now' ]
+    RELDATE=doesNotExist run -0 executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%p'
+    assert_output 'just now'
 }
 
 @test "%s-formatted zero diff of fox subject is printed" {
-    run executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%s'
-    [ $status -eq 0 ]
-    [ "$output" = 'just now' ]
+    run -0 executionMarker --timestamp "$ZERO_TIMESTAMP" --group samples --diff fox --format '%s'
+    assert_output 'just now'
 }

@@ -11,7 +11,6 @@ load canned_config
 }
 
 @test "foo is not without 12 hours" {
-    run executionMarker --timestamp "$NOW" --group samples --query foo --without 12h
-    [ $status -eq 1 ]
+    run -1 executionMarker --timestamp "$NOW" --group samples --query foo --without 12h
 }
 

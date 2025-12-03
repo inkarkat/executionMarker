@@ -8,9 +8,8 @@ testWithContext()
     initialize_config "$BATS_TEST_NAME" from samples
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "key" --context "$context"
 
-    run executionMarker --group "$BATS_TEST_NAME" --query key --get-context
-    [ $status -eq 0 ]
-    [ "$output" = "$context" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query key --get-context
+    assert_output "$context"
 }
 
 

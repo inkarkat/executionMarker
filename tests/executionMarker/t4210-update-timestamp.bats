@@ -13,11 +13,9 @@ load temp_config
 
     assert_config_row "$BATS_TEST_NAME" 3 "$SUBJECT	$TIMESTAMP	$CONTEXT"
 
-    run executionMarker --group "$BATS_TEST_NAME" --query "$SUBJECT" --get-context
-    [ $status -eq 0 ]
-    [ "$output" = "$CONTEXT" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query "$SUBJECT" --get-context
+    assert_output "$CONTEXT"
 
-    run executionMarker --group "$BATS_TEST_NAME" --query "$SUBJECT" --get-timestamp
-    [ $status -eq 0 ]
-    [ "$output" = "$TIMESTAMP" ]
+    run -0 executionMarker --group "$BATS_TEST_NAME" --query "$SUBJECT" --get-timestamp
+    assert_output "$TIMESTAMP"
 }

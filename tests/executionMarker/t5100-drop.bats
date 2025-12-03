@@ -7,7 +7,7 @@ load temp_config
 
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --drop
 
-    [ ! -e "${XDG_DATA_HOME}/${BATS_TEST_NAME}" ]
+    assert_not_exists "${XDG_DATA_HOME}/${BATS_TEST_NAME}"
     ! executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --query "fox"
 }
 
@@ -15,7 +15,6 @@ load temp_config
     initialize_config "$BATS_TEST_NAME" from samples
     executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --drop
 
-    run executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --drop
-    [ $status -eq 1 ]
-    [ "$output" = "" ]
+    run -1 executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --drop
+    assert_output ''
 }
