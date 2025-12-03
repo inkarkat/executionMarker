@@ -181,7 +181,7 @@ startTransaction()
     trap 'marker --end-transaction "${ownerId:?}"' EXIT
 }
 
-eval "commandOutput=\"\$($commands ${redirPrefix}; status=\$?; printf @; exit \$status)\" ${redirSuffix}"; exitStatus=$?
+eval "commandOutput=\"\$({ $commands; } ${redirPrefix}; status=\$?; printf @; exit \$status)\" ${redirSuffix}"; exitStatus=$?
 commandOutput="${commandOutput%@}"
 
 printf -v currentOutput "exit status: %d\n\n%s" "$exitStatus" "$commandOutput"

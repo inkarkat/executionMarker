@@ -29,3 +29,18 @@ load canned_config
  
 -flaky" ]
 }
+
+@test "commands with both stdout and stderr" {
+    type -t reldate >/dev/null || skip 'reldate is not available'
+    run withOutputDiffToPreviousExecution -u --group samples -c 'echo message' -c 'echo error >&2' -c 'echo from stdout' -c 'echo from stderr >&2'
+    [ $status -eq 99 ]
+    [ "$output" = "--- (no previous execution)
++++ echo Fri May 24 06:52:30 UTC 2024
+@@ -0,0 +1,6 @@
++exit status: 0
++
++message
++error
++from stdout
++from stderr" ]
+}
