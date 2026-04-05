@@ -609,7 +609,7 @@ calculateTimeRange()
 	lastDivision="$((markerTimestamp / timedivider))"
 	[ $timespan $spanCompareOp $((thisDivision - lastDivision)) ]
     else
-	[ $markerTimestamp $spanCompareOp $((NOW - timespan)) ]
+	[ $timespan $spanCompareOp $((NOW - markerTimestamp)) ]
     fi
 }
 
