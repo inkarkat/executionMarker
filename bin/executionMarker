@@ -29,7 +29,7 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [--format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]|second|minute|hour|day|week|month|year|every N (seconds|minutes|hours|days|weeks)] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]s[econd]|m[inute]|h[our]|d[ay]|w[eek]|mo[nth]|y[ear]|every N (s[econd[s]]|m[inute[s]]|h[our[s]]|d[ay[s]]|w[eek[s]]|mo[nth[s]]|y[ear[s]]|g[eneration[s]])] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
 }
@@ -103,13 +103,17 @@ HELPDESCRIPTION
 				'h' for hours or 'd' for days.
 				TIMESLOT can be one of
 				second|minute|hour|day|week|month|year, or
-				every N seconds|minutes|hours|days|weeks, which
-				doesn't translate to a fixed minimal timespan,
-				but instead ensures that this happens at least
-				once in the slot. For example, 'day' could mean
-				two executions within seconds, if the first
-				check happens before midnight and the next
-				shortly after midnight.
+				every N seconds|minutes|hours|days|weeks|months|years|generations,
+				which doesn't translate to a fixed minimal
+				timespan, but instead ensures that this
+				(including executions with a recorded future
+				date) happens at least once in the slot.
+				For example, "day" would yield false despite an
+				actual execution happening only seconds prior,
+				if that was before midnight and the check is
+				shortly after midnight, whereas "every 1 day"
+				would yield true as long as the actual
+				difference is within 86400 seconds.
     --without|-W VALID-TIMESPAN|TIMESLOT
 				Checks whether the time difference between the
 				last execution of SUBJECT and now is larger or
@@ -235,24 +239,30 @@ getSpan()
 parseTime()
 {
     case "$1" in
-	+([0-9])?(s))		    timespan="${1%s}";;
-	+([0-9])m)		    timespan=$((${1%m} * 60));;
-	+([0-9])h)		    timespan=$((${1%h} * 3600));;
-	+([0-9])d)		    timespan=$((${1%d} * 86400));;
-	+([0-9])w)		    timespan=$((${1%d} * 604800));;
-	second)			    timeformat='%s';;
-	minute)			    timeformat='%F_%H:%M';;
-	hour)			    timeformat='%F_%H';;
-	day)			    timeformat='%F';;
-	week)			    timeformat='%G_%V';;
-	month)			    timeformat='%Y_%m';;
-	year)			    timeformat='%Y';;
-	every\ +([0-9])\ seconds)   timespan="$(getSpan "$1")"; timedivider=1;;
-	every\ +([0-9])\ minutes)   timespan="$(getSpan "$1")"; timedivider=60;;
-	every\ +([0-9])\ hours)	    timespan="$(getSpan "$1")"; timedivider=3600;;
-	every\ +([0-9])\ days)	    timespan="$(getSpan "$1")"; timedivider=86400;;
-	every\ +([0-9])\ weeks)	    timespan="$(getSpan "$1")"; timedivider=604800;;
-	*)			    printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
+	+([0-9])?(s))			    timespan="${1%s}";;
+	+([0-9])m)			    timespan=$((${1%m} * 60));;
+	+([0-9])h)			    timespan=$((${1%h} * 3600));;
+	+([0-9])d)			    timespan=$((${1%d} * 86400));;
+	+([0-9])w)			    timespan=$((${1%w} * 86400 * 7));;
+	+([0-9])mo)			    timespan=$((${1%mo} * 86400 * 30));;
+	+([0-9])y)			    timespan=$((${1%y} * 86400 * 365));;
+	+([0-9])g)			    timespan=$((${1%g} * 86400 * 9131));;
+	s?(econd))			    timeformat='%s';;
+	m?(inute))			    timeformat='%F_%H:%M';;
+	h?(our))			    timeformat='%F_%H';;
+	d?(ay))				    timeformat='%F';;
+	w?(eek))			    timeformat='%G_%V';;
+	mo?(nth))			    timeformat='%Y_%m';;
+	y?(ear))			    timeformat='%Y';;
+	every\ +([0-9])\ s?(econd?(s)))	    timespan="$(getSpan "$1")"; timedivider=1;;
+	every\ +([0-9])\ m?(inute?(s)))	    timespan="$(getSpan "$1")"; timedivider=60;;
+	every\ +([0-9])\ h?(our?(s)))	    timespan="$(getSpan "$1")"; timedivider=3600;;
+	every\ +([0-9])\ d?(ay?(s)))	    timespan="$(getSpan "$1")"; timedivider=86400;;
+	every\ +([0-9])\ w?(eek?(s)))	    timespan="$(getSpan "$1")"; timedivider=$((86400 * 7));;
+	every\ +([0-9])\ mo?(nth?(s)))	    timespan="$(getSpan "$1")"; timedivider=$((86400 * 30));;
+	every\ +([0-9])\ y?(ear?(s)))	    timespan="$(getSpan "$1")"; timedivider=$((86400 * 365));;
+	every\ +([0-9])\ g?(eneration?(s))) timespan="$(getSpan "$1")"; timedivider=$((86400 * 9131));;
+	*)				    printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
     esac
 }
 multipleActionsError()
@@ -604,9 +614,10 @@ calculateTimeRange()
 	local thisDivision lastDivision
 	thisDivision="$((NOW / timedivider))"
 	lastDivision="$((markerTimestamp / timedivider))"
-	[ $timespan $spanCompareOp $((thisDivision - lastDivision)) ]
+	delta=$((thisDivision - lastDivision))
+	[ $timespan $spanCompareOp $((delta < 0 ? -delta : delta)) ]
     else
-	[ $markerTimestamp $spanCompareOp $((NOW - timespan)) ]
+	[ $timespan $spanCompareOp $((NOW - markerTimestamp)) ]
     fi
 }
 
