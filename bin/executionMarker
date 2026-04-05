@@ -105,8 +105,9 @@ HELPDESCRIPTION
 				second|minute|hour|day|week|month|year, or
 				every N seconds|minutes|hours|days|weeks|months|years|generations,
 				which doesn't translate to a fixed minimal
-				timespan, but instead ensures that this happens
-				at least once in the slot.
+				timespan, but instead ensures that this
+				(including executions with a recorded future
+				date) happens at least once in the slot.
 				For example, "day" would yield false despite an
 				actual execution happening only seconds prior,
 				if that was before midnight and the check is
@@ -613,7 +614,8 @@ calculateTimeRange()
 	local thisDivision lastDivision
 	thisDivision="$((NOW / timedivider))"
 	lastDivision="$((markerTimestamp / timedivider))"
-	[ $timespan $spanCompareOp $((thisDivision - lastDivision)) ]
+	delta=$((thisDivision - lastDivision))
+	[ $timespan $spanCompareOp $((delta < 0 ? -delta : delta)) ]
     else
 	[ $timespan $spanCompareOp $((NOW - markerTimestamp)) ]
     fi
