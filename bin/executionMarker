@@ -106,10 +106,13 @@ HELPDESCRIPTION
 				every N seconds|minutes|hours|days|weeks, which
 				doesn't translate to a fixed minimal timespan,
 				but instead ensures that this happens at least
-				once in the slot. For example, 'day' could mean
-				two executions within seconds, if the first
-				check happens before midnight and the next
-				shortly after midnight.
+				once in the slot.
+				For example, "day" would yield false despite an
+				actual execution happening only seconds prior,
+				if that was before midnight and the check is
+				shortly after midnight, whereas "every 1 day"
+				would yield true as long as the actual
+				difference is within 86400 seconds.
     --without|-W VALID-TIMESPAN|TIMESLOT
 				Checks whether the time difference between the
 				last execution of SUBJECT and now is larger or
