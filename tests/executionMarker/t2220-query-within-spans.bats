@@ -27,6 +27,6 @@ load canned_config
 
 @test "invalid timespan gives error" {
     run -2 executionMarker --timestamp "$NOW" --group samples --query foo --within millenium
-    assert_line -n 0 'ERROR: Invalid TIMESPAN/TIMESLOT: "millenium".'
-    assert_line -n 2 -e '^Usage:'
+    assert_line -n 0 'ERROR: Invalid TIMESLOT: "millenium".'
+    assert_line -n 1 -e '^Usage:'
 }

@@ -37,6 +37,6 @@ setup()
 }
 
 @test "transactional fallback subject is used when subject is not within 10 seconds and it is within" {
-    run -0 executionMarker --transactional --timestamp "$NOW" --group "$BATS_TEST_NAME" --query fox --fallback-subject foo --fallback-on-time --within 10 --get-context
+    run -0 executionMarker --transactional --timestamp "$NOW" --group "$BATS_TEST_NAME" --query fox --fallback-subject foo --fallback-on-time --newer 10 --get-context
     assert_output 'More foo for me.'
 }
