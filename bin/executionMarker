@@ -391,7 +391,7 @@ update()
 timediff()
 {
     if [ ${#additionalInformation[@]} -gt 0 ]; then
-	echo 'ERROR: Cannot query additional information with --diff; use --query instead.'
+	echo 'ERROR: Cannot query additional information with --diff; use --query and --get-diff instead.'
 	echo
 	printUsage "$0"
 	return 2
