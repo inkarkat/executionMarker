@@ -12,7 +12,8 @@ It can then be queried whether the subject has been recorded already (and, more 
 
 * [inkarkat/miniDB](https://github.com/inkarkat/miniDB)
 * [inkarkat/shell-basics](https://github.com/inkarkat/shell-basics) for the `withOutputDiffToPreviousExecution` command
-* [inkarkat/reldate](https://github.com/inkarkat/reldate) (optional)
+* [inkarkat/date-extensions](https://github.com/inkarkat/date-extensions) for time difference formatting via `--output`
+* [inkarkat/shell-filters](https://github.com/inkarkat/shell-filters) for `--output precise` formatting
 * automated testing is done with _bats - Bash Automated Testing System_ (https://github.com/bats-core/bats-core)
 
 ## Simple cache implementation
