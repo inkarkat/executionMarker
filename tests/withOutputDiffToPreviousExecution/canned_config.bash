@@ -40,3 +40,10 @@ previouslySucceedingFunction()
     return 42
 }
 export -f previouslySucceedingFunction
+
+skipIfMissingPreciseDiffOutputDependencies()
+{
+    type -t datediff >/dev/null || skip 'datediff is not available'
+    type -t secondsToDuration >/dev/null || skip 'secondsToDuration is not available'
+}
+
