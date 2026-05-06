@@ -190,7 +190,10 @@ currentTimestamp="$(date -d "@$NOW")"
 
 $preAction
 
-previousOutput="$(marker "${transactionArgs[@]}" --query "$escapedId" --timestamp "$NOW" --get-time '' --get-diff --output precise --get-context; status=$?; printf @; exit $status)"; status=$?
+typeset -a outputArgs=(--output precise)
+type -t ${DATEDIFF:-datediff} >/dev/null && type -t ${SECONDSTODURATION:-secondsToDuration} >/dev/null || outputArgs=()
+
+previousOutput="$(marker "${transactionArgs[@]}" --query "$escapedId" --timestamp "$NOW" --get-time '' --get-diff "${outputArgs[@]}" --get-context; status=$?; printf @; exit $status)"; status=$?
 case $status in
     0)
 	previousOutput="${previousOutput%$'\n@'}"

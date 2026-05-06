@@ -17,9 +17,11 @@
 ###############################################################################
 shopt -qs extglob
 
+: ${DATEDIFF:=datediff}
+
 printShortUsage()
 {
-    local comparisonArgs="$(datediff --get-short-usage comparisons)"
+    local comparisonArgs="$($DATEDIFF --get-short-usage comparisons)"
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
@@ -408,7 +410,7 @@ printTimeDiff()
 	return 0
     fi
 
-    datediff --output-inverted "${datediffArgs[@]}" "${datediffOutputArgs[@]}" "@$markerTimestamp"
+    $DATEDIFF --output-inverted "${datediffArgs[@]}" "${datediffOutputArgs[@]}" "@$markerTimestamp"
 }
 
 lasttime()
@@ -479,7 +481,7 @@ createView()
 
 calculateTimeRange()
 {
-    datediff "${datediffArgs[@]}" "${datediffComparisonArgs[@]}" "@$markerTimestamp"
+    $DATEDIFF "${datediffArgs[@]}" "${datediffComparisonArgs[@]}" "@$markerTimestamp"
 }
 
 printTimeRange()
