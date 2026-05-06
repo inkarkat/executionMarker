@@ -17,8 +17,8 @@ More foo for me.
 EOF
 }
 
-@test "query prints formatted time of fox subject together with --within 10" {
-    run -1 executionMarker --timestamp "$NOW" --group samples --query fox --within 10 --get-time 'time is %T'
+@test "query prints formatted time of fox subject together with --newer 10" {
+    run -1 executionMarker --timestamp "$NOW" --group samples --query fox --newer 10 --get-time 'time is %T'
     assert_output 'time is 08:56:37'
 }
 

@@ -37,9 +37,10 @@ EOF
 }
 
 @test "previouslyFailingFunction run indicates changed exit status" {
+    skipIfMissingPreciseDiffOutputDependencies
     run -1 withOutputDiffToPreviousExecution -u --group samples -- previouslyFailingFunction
     assert_output - <<'EOF'
---- previouslyFailingFunction Fri May 24 06:48:53 UTC 2024 (217 seconds ago)
+--- previouslyFailingFunction Fri May 24 06:48:53 UTC 2024 (3m 37s ago)
 +++ previouslyFailingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 11
@@ -50,10 +51,10 @@ EOF
 }
 
 @test "previouslySucceedingFunction run indicates changed exit status and output" {
-    type -t reldate >/dev/null || skip 'reldate is not available'
+    skipIfMissingPreciseDiffOutputDependencies
     run -1 withOutputDiffToPreviousExecution -u --group samples -- previouslySucceedingFunction
     assert_output - <<'EOF'
---- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (22439 seconds ago)
+--- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (06:13:59 ago)
 +++ previouslySucceedingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 0

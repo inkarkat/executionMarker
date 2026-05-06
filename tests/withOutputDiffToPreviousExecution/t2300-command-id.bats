@@ -3,9 +3,10 @@
 load canned_config
 
 @test "override ID to compare against previous true run" {
+    skipIfMissingPreciseDiffOutputDependencies
     run -1 withOutputDiffToPreviousExecution --command-id true -u --group samples -- testFunction
     assert_output - <<'EOF'
---- true Tue Oct 25 02:57:46 UTC 2022 (49866884 seconds ago)
+--- true Tue Oct 25 02:57:46 UTC 2022 (1y 6mo 4w 1d 15:54:44 ago)
 +++ true Fri May 24 06:52:30 UTC 2024
 @@ -1,2 +1,3 @@
  exit status: 0

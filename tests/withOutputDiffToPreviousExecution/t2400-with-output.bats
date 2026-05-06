@@ -3,9 +3,10 @@
 load canned_config
 
 @test "previouslySucceedingFunction run with --or-output still indicates changed exit status and output" {
+    skipIfMissingPreciseDiffOutputDependencies
     run -1 withOutputDiffToPreviousExecution --or-output -u --group samples -- previouslySucceedingFunction
     assert_output - <<'EOF'
---- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (22439 seconds ago)
+--- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (06:13:59 ago)
 +++ previouslySucceedingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 0
@@ -35,11 +36,12 @@ EOF
 }
 
 @test "previouslySucceedingFunction run with --and-output prints output and indicates changed exit status and output" {
+    skipIfMissingPreciseDiffOutputDependencies
     run -1 withOutputDiffToPreviousExecution --and-output -u --group samples -- previouslySucceedingFunction
     assert_output - <<'EOF'
 new problem
 
---- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (22439 seconds ago)
+--- previouslySucceedingFunction Fri May 24 00:38:31 UTC 2024 (06:13:59 ago)
 +++ previouslySucceedingFunction Fri May 24 06:52:30 UTC 2024
 @@ -1,3 +1,3 @@
 -exit status: 0

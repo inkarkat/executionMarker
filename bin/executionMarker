@@ -17,19 +17,20 @@
 ###############################################################################
 shopt -qs extglob
 
-: ${RELDATE:=reldate}
+: ${DATEDIFF:=datediff}
 
 printShortUsage()
 {
+    local comparisonArgs="$($DATEDIFF --get-short-usage comparisons)"
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-x|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction OWNER-ID|-X|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [-w|--within|-W|--without ...] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [--format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [${comparisonArgs}] [-x|--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [DATEDIFF-ARGS ...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -q|--query SUBJECT [-w|--within|-W|--without VALID-TIMESPAN[SUFFIX]s[econd]|m[inute]|h[our]|d[ay]|w[eek]|mo[nth]|y[ear]|every N (s[econd[s]]|m[inute[s]]|h[our[s]]|d[ay[s]]|w[eek[s]]|mo[nth[s]]|y[ear[s]]|g[eneration[s]])] [-x|--get-context] [--get-timestamp] [--get-time --format DATE-FORMAT|""] [--get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -q|--query SUBJECT [${comparisonArgs}] [-x|--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]"
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
 }
@@ -74,17 +75,10 @@ HELPDESCRIPTION
     --timestamp|-T EPOCH	Write EPOCH instead of the current time.
 				(For other actions, use EPOCH instead of now for
 				comparison.)
-    --diff|-d SUBJECT		Determine the time difference between the last
+    --diff|-d SUBJECT		Just print the time difference in seconds (or
+				according to DATEDIFF-ARGS) between the last
 				execution of SUBJECT and now. Returns 4 if no
 				record for SUBJECT exists.
-    --format ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...
-				Instead of returning the time difference as
-				seconds, format as the passed string, where %S
-				stands for the seconds, %s a simple "N seconds
-				ago", %[P]R as an adaptive relative date with a
-				maximum of P units, %[P]r likewise but with
-				short units, %[P]P / %[P]p as a timespan (i.e.
-				without the "ago").
     --time|-t SUBJECT		Return the time (Unix epoch, unless --format is
 				given) of the last execution of SUBJECT.
 				Returns 4 if no record for SUBJECT exists.
@@ -92,33 +86,11 @@ HELPDESCRIPTION
 				a Unix epoch, format this as DATE-FORMAT. If
 				empty, uses the default date format.
     --query|-q SUBJECT		Query whether a record for SUBJECT exists.
-    --within|-w VALID-TIMESPAN|TIMESLOT
-				Checks whether the time difference between the
-				last execution of SUBJECT and now is smaller or
-				equal to VALID-TIMESPAN / falls inside TIMESLOT.
-				Returns 1 if it is larger / outside the slot or
-				4 if no record for SUBJECT exists.
-				TIMESPAN is NUMBER[SUFFIX], where SUFFIX may be
-				's' for seconds (the default), 'm' for minutes,
-				'h' for hours or 'd' for days.
-				TIMESLOT can be one of
-				second|minute|hour|day|week|month|year, or
-				every N seconds|minutes|hours|days|weeks|months|years|generations,
-				which doesn't translate to a fixed minimal
-				timespan, but instead ensures that this
-				(including executions with a recorded future
-				date) happens at least once in the slot.
-				For example, "day" would yield false despite an
-				actual execution happening only seconds prior,
-				if that was before midnight and the check is
-				shortly after midnight, whereas "every 1 day"
-				would yield true as long as the actual
-				difference is within 86400 seconds.
-    --without|-W VALID-TIMESPAN|TIMESLOT
-				Checks whether the time difference between the
-				last execution of SUBJECT and now is larger or
-				equal to VALID-TIMESPAN / falls outside
-				TIMESLOT.
+				The (typically negative) time difference between
+				the last execution of SUBJECT and now can be
+				compared through datediff options.
+				Returns 1 if that comparison fails or 4 if no
+				record for SUBJECT exists.
     --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
     --get-timestamp		Prints the recorded timestamp (Unix epoch) for
@@ -127,20 +99,14 @@ HELPDESCRIPTION
 				use --time.
     --get-time DATE-FORMAT|""	Prints the time (in DATE-FORMAT / the default
 				date format).
-    --get-diff ...%S|%s|%[P]r|%[P]R|%[P]P|%[P]p...
-				Print the time difference as the passed string,
-				where %S stands for the seconds, %s a simple "N
-				seconds ago", %[P]R as an adaptive relative date
-				with a maximum of P units, %[P]r likewise but
-				with short units, %[P]P / %[P]p as a timespan
-				(i.e. without the "ago").
+    --get-diff			Print the time difference in seconds (or
+				according to DATEDIFF-ARGS).
     --fallback-subject|-f FALLBACK-SUBJECT
 				Lookup FALLBACK-SUBJECT instead if SUBJECT
 				hasn't been recorded.
     --fallback-on-time|-F	Also try FALLBACK-SUBJECT for the time
 				comparison if the time difference between the
-				last execution of SUBJECT and now does not fall
-				into the range given my --within or --without.
+				last execution of SUBJECT and now fails.
 				In other words, the fallback is also used if the
 				last execution of SUBJECT is too long ago or too
 				recent, not just when SUBJECT doesn't exist.
@@ -220,8 +186,8 @@ EXIT STATUS:
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion.
     4	The queried SUBJECT (nor FALLBACK-SUBJECT if given) for --query, --diff,
-	--time, --within, --without / to-be-deleted SUBJECT for --delete does
-	not exist.
+	--time / time comparisons / to-be-deleted SUBJECT for --delete does not
+	exist.
     5	Time out while waiting to start a transaction.
     6	The current transaction has taken too long (TX-TIMEOUT). On
 	modifications --within-transaction, aborts. On --end-transaction, if it
@@ -229,42 +195,6 @@ EXIT STATUS:
 HELPTEXT
 }
 
-getSpan()
-{
-    local divider="$1"; shift
-    divider="${divider#every }"
-    divider="${divider% +([a-z])}"
-    printf '%d' "$divider"
-}
-parseTime()
-{
-    case "$1" in
-	+([0-9])?(s))			    timespan="${1%s}";;
-	+([0-9])m)			    timespan=$((${1%m} * 60));;
-	+([0-9])h)			    timespan=$((${1%h} * 3600));;
-	+([0-9])d)			    timespan=$((${1%d} * 86400));;
-	+([0-9])w)			    timespan=$((${1%w} * 86400 * 7));;
-	+([0-9])mo)			    timespan=$((${1%mo} * 86400 * 30));;
-	+([0-9])y)			    timespan=$((${1%y} * 86400 * 365));;
-	+([0-9])g)			    timespan=$((${1%g} * 86400 * 9131));;
-	s?(econd))			    timeformat='%s';;
-	m?(inute))			    timeformat='%F_%H:%M';;
-	h?(our))			    timeformat='%F_%H';;
-	d?(ay))				    timeformat='%F';;
-	w?(eek))			    timeformat='%G_%V';;
-	mo?(nth))			    timeformat='%Y_%m';;
-	y?(ear))			    timeformat='%Y';;
-	every\ +([0-9])\ s?(econd?(s)))	    timespan="$(getSpan "$1")"; timedivider=1;;
-	every\ +([0-9])\ m?(inute?(s)))	    timespan="$(getSpan "$1")"; timedivider=60;;
-	every\ +([0-9])\ h?(our?(s)))	    timespan="$(getSpan "$1")"; timedivider=3600;;
-	every\ +([0-9])\ d?(ay?(s)))	    timespan="$(getSpan "$1")"; timedivider=86400;;
-	every\ +([0-9])\ w?(eek?(s)))	    timespan="$(getSpan "$1")"; timedivider=$((86400 * 7));;
-	every\ +([0-9])\ mo?(nth?(s)))	    timespan="$(getSpan "$1")"; timedivider=$((86400 * 30));;
-	every\ +([0-9])\ y?(ear?(s)))	    timespan="$(getSpan "$1")"; timedivider=$((86400 * 365));;
-	every\ +([0-9])\ g?(eneration?(s))) timespan="$(getSpan "$1")"; timedivider=$((86400 * 9131));;
-	*)				    printf >&2 'ERROR: Invalid TIMESPAN/TIMESLOT: "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
-    esac
-}
 multipleActionsError()
 {
     echo >&2 "ERROR: Only one of --update, --diff, --time, --query, --delete, --drop, --start-read-transaction, --start-write-transaction, --upgrade-to-write-transaction, --within-transaction, --end-transaction, --abort-write-transaction allowed."
@@ -293,13 +223,10 @@ isIncrementContext=
 isKeepContext=
 action=
 additionalInformation=()
-timespan=
-timeformat=
-timedivider=
 unset dateFormat
-diffFormat=
-spanCompareOp=
-formatCompareOp=
+typeset -a datediffArgs=()
+typeset -a datediffComparisonArgs=()
+typeset -a datediffOutputArgs=()
 markerErrorStatusOverride=
 while [ $# -ne 0 ]
 do
@@ -328,15 +255,16 @@ do
 	--increment-context)	shift; isIncrementContext=t;;
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-T)		shift; NOW="$1"; shift;;
-	--format)		shift; dateFormat="$1"; diffFormat="$1"; shift;;
+	--format)		shift; dateFormat="$1"; shift;;
 	--get-context|-x)	shift; additionalInformation+=(printContext);;
 	--get-timestamp)	shift; additionalInformation+=(printTimestamp);;
 	--get-time)		shift; additionalInformation+=(printLastTime); dateFormat="$1"; shift;;
-	--get-diff)		shift; additionalInformation+=(printTimeDiff); diffFormat="$1"; shift;;
+	--get-diff)		shift; additionalInformation+=(printTimeDiff);;
 	--fallback-subject|-f)	shift; fallbackSubject="$1"; shift;;
 	--fallback-on-time|-F)	shift; isFallbackOnTime=t;;
-	--within|-w)	shift; parseTime "$1"; spanCompareOp='-ge'; formatCompareOp='='; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4; shift;;
-	--without|-W)	shift; parseTime "$1"; spanCompareOp='-le'; formatCompareOp='!='; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4; shift;;
+	--newer|--older|-lt|-le|-eq|-ne|-ge|-gt|--within|-w|--outside|-W)
+			datediffComparisonArgs+=("$1" "${2:?}"); shift; shift; additionalInformation+=(printTimeRange); markerErrorStatusOverride=4;;
+	--output|-o)	datediffOutputArgs+=("$1" "${2:?}"); shift; shift;;
 	--update|-u)	shift; [ "$action" ] && multipleActionsError "$0"; action='update'; subject="$1"; shift;;
 	--diff|-d)	shift; [ "$action" ] && multipleActionsError "$0"; action='timediff'; subject="$1"; shift;;
 	--time|-t)	shift; [ "$action" ] && multipleActionsError "$0"; action='lasttime'; subject="$1"; shift;;
@@ -344,7 +272,17 @@ do
 	--delete|-D)	shift; [ "$action" ] && multipleActionsError "$0"; action='delete'; subject="$1"; shift;;
 	--drop)		shift; [ "$action" ] && multipleActionsError "$0"; action='drop'; shift;;
 	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	-*)		if argCount=$(datediff --understands "$@"); then
+			    while ((argCount-- > 0))
+			    do
+				datediffArgs+=("$1"); shift
+			    done
+			elif [ $? -eq 2 ]; then
+			    exit 2
+			else
+			    { echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2
+			fi
+			;;
 	*)		break;;
     esac
 done
@@ -363,11 +301,11 @@ if [ $# -gt 0 ]; then
     printUsage "$0" >&2
     exit 2
 fi
-if [ -n "$timespan" -o -n "$timeformat" -o -n "$timedivider" ]; then
+if [ ${#datediffComparisonArgs[@]} -gt 0 ]; then
     if [ "$action" = 'query' ]; then
 	action="timerange${isFallbackOnTime:+${fallbackSubject:+WithTimeFallback}}"
-    elif [ "$action" != 'update' ]; then
-	echo "ERROR: --within and --without can only be combined with --query or --update."
+    elif [ "$action" != 'update'  -a "$action" != 'timediff' ]; then
+	echo "ERROR: Time comparisons can only be combined with --query, --update, or --diff."
 	echo
 	printUsage "$0"
 	exit 2
@@ -446,7 +384,7 @@ update()
 	local line; line="$(updateHandlingQuery --columns \*)" || return $?
 	parseMarker "$line" || return 0	# Empty record means new record here and is not a failure.
 	printAdditionalInformation
-	if [ -n "$timeformat" -o -n "$timedivider" -o -n "$spanCompareOp" ]; then
+	if [ ${#datediffComparisonArgs[@]} -gt 0 ]; then
 	    calculateTimeRange
 	fi
     fi
@@ -455,7 +393,7 @@ update()
 timediff()
 {
     if [ ${#additionalInformation[@]} -gt 0 ]; then
-	echo 'ERROR: Cannot query additional information with --diff; use --query instead.'
+	echo 'ERROR: Cannot query additional information with --diff; use --query and --get-diff instead.'
 	echo
 	printUsage "$0"
 	return 2
@@ -467,74 +405,12 @@ timediff()
 
 printTimeDiff()
 {
-    local timeDiff=$((NOW - markerTimestamp))
-
-    if [ -n "$diffFormat" ]; then
-	diffFormat="${diffFormat//%%/}"
-
-	    while [[ "$diffFormat" =~ %S ]]
-	    do
-		diffFormat="${diffFormat//%S/$timeDiff}"
-	    done
-
-	    while [[ "$diffFormat" =~ %s ]]
-	    do
-		local timeDiffPlural=s; [ $timeDiff -eq 1 -o $timeDiff -eq -1 ] && timeDiffPlural=
-		if [ $timeDiff -gt 0 ]; then
-		    diffFormat="${diffFormat//%s/$timeDiff second${timeDiffPlural} ago}"
-		elif [ $timeDiff -lt 0 ]; then
-		    diffFormat="${diffFormat//%s/in $((timeDiff * -1)) second${timeDiffPlural}}"
-		else
-		    diffFormat="${diffFormat//%s/just now}"
-		fi
-	    done
-
-	    while [[ "$diffFormat" =~ %([0-9]*)([pPrR]) ]]
-	    do
-		local fullFormat="${BASH_REMATCH[0]}"
-		local precision="${BASH_REMATCH[1]}"
-		local format="${BASH_REMATCH[2]}"
-		case "$format" in
-		    [pP])   local isTimespan=;;
-		    *)	    local isTimespan=t;;
-		esac
-		[ ! "$isTimespan" ] && [ $timeDiff -lt 0 ] && let timeDiff*=-1
-
-		if type -t $RELDATE >/dev/null; then
-		    typeset -a reldateArgs=()
-		    [ -n "$precision" ] && reldateArgs+=(--precision "$precision")
-		    [[ "$format" =~ ^[[:lower:]]$ ]] && reldateArgs+=(--short-units)
-
-		    let reldateTimeDiff=-1*timeDiff
-		    local reldateTimeDiffSigil=
-		    if [ "$isTimespan" ]; then
-			[ $reldateTimeDiff -gt 0 ] && reldateTimeDiffSigil=+
-		    else
-			let reldateTimeDiff*=-1
-		    fi
-		    diffFormat="${diffFormat//${fullFormat}/$($RELDATE "${reldateArgs[@]}" --timespan "${reldateTimeDiffSigil}$reldateTimeDiff")}"
-		else
-		    # Fall back to simpler %s-like rendering.
-		    local timeDiffPlural=s; [ $timeDiff -eq 1 ] && timeDiffPlural=
-		    local timeUnit=" second${timeDiffPlural}"; [[ "$format" =~ ^[[:lower:]]$ ]] && timeUnit='s'
-		    if [ $timeDiff -gt 0 ]; then
-			diffFormat="${diffFormat//${fullFormat}/$timeDiff${timeUnit}${isTimespan:+ ago}}"
-		    elif [ $timeDiff -lt 0 ]; then
-			diffFormat="${diffFormat//${fullFormat}/${isTimespan:+ }in $timeDiff${timeUnit}}"
-		    elif [ "$isTimespan" ]; then
-			diffFormat="${diffFormat//${fullFormat}/no time}"
-		    else
-			diffFormat="${diffFormat//${fullFormat}/just now}"
-		    fi
-		fi
-	    done
-
-	diffFormat="${diffFormat///%}"
-
-	printf '%s\n' "$diffFormat"
-    else
-	printf '%d\n' "$timeDiff"
+    if [ ${#datediffArgs[@]} -eq 0 -a ${#datediffOutputArgs[@]} -eq 0 ]; then
+	printf '%d\n' $((NOW - markerTimestamp))
+	return 0
     fi
+
+    $DATEDIFF --output-inverted "${datediffArgs[@]}" "${datediffOutputArgs[@]}" "@$markerTimestamp"
 }
 
 lasttime()
@@ -605,26 +481,13 @@ createView()
 
 calculateTimeRange()
 {
-    if [ -n "$timeformat" ]; then
-	local thisRun lastRun
-	thisRun="$(date --date "@$NOW" "+$timeformat")" || exit 3
-	lastRun="$(date --date "@$markerTimestamp" "+$timeformat")" || exit 3
-	[ "$lastRun" $formatCompareOp "$thisRun" ]
-    elif [ -n "$timedivider" ]; then
-	local thisDivision lastDivision
-	thisDivision="$((NOW / timedivider))"
-	lastDivision="$((markerTimestamp / timedivider))"
-	delta=$((thisDivision - lastDivision))
-	[ $timespan $spanCompareOp $((delta < 0 ? -delta : delta)) ]
-    else
-	[ $timespan $spanCompareOp $((NOW - markerTimestamp)) ]
-    fi
+    $DATEDIFF "${datediffArgs[@]}" "${datediffComparisonArgs[@]}" "@$markerTimestamp"
 }
 
 printTimeRange()
 {
     # This function just serves as a marker in additionalInformation; it does
-    # nothing because for --within/--without, no information is printed, but the
+    # nothing because for time comparisons, no information is printed, but the
     # result is in the exit status (and therefore calculateTimeRange() has to
     # run last).
     :
