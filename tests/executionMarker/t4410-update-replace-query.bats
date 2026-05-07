@@ -43,3 +43,10 @@ Two minutes earlier than foo.
 1557046597
 EOF
 }
+
+@test "update of an existing key overwrites that row with updated timestamp and context and returns the previous context and timestamp with custom separator" {
+    initialize_config "$BATS_TEST_NAME" from samples
+
+    EXECUTIONMARKER_OUTPUT_SEPARATOR='---' run -0 executionMarker --timestamp "$NOW" --group "$BATS_TEST_NAME" --update "fox" --context "$CONTEXT" --get-context --get-timestamp
+    assert_output 'Two minutes earlier than foo.---1557046597'
+}

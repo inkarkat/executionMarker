@@ -47,3 +47,18 @@ EOF
 More foo for me.
 EOF
 }
+
+@test "context and timestamp of existing subject can be queried with custom separator" {
+    typeset -A data=(
+	[' ']='1557046728 More foo for me. 7 years ago 2019'
+	[', ']='1557046728, More foo for me., 7 years ago, 2019'
+	[$'\n\t']=$'1557046728\n\tMore foo for me.\n\t7 years ago\n\t2019'
+    )
+
+    for value in "${!data[@]}"
+    do
+	EXECUTIONMARKER_OUTPUT_SEPARATOR="$value" run -0 executionMarker --group samples --query foo --get-timestamp --get-context --get-diff --output best-unit --get-time '%Y' \
+	    && assert_output "${data["$value"]}" \
+	    || fail "$value"
+    done
+}

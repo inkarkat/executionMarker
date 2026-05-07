@@ -18,21 +18,28 @@
 shopt -qs extglob
 
 : ${DATEDIFF:=datediff}
+: ${EXECUTIONMARKER_OUTPUT_SEPARATOR=$'\n'}
 
 printShortUsage()
 {
     local comparisonArgs="$($DATEDIFF --get-short-usage comparisons 2>/dev/null)"
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help] ...'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors] ...'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-x|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction OWNER-ID|-X|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [${comparisonArgs}] [--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]]"
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [DATEDIFF-ARGS ...] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -q|--query SUBJECT [${comparisonArgs}] [--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]"
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
+    echo
+    printf 'Usage: [EXECUTIONMARKER_OUTPUT_SEPARATOR=TEXT] %q %s\n' "$(basename "$1")" "... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [${comparisonArgs}] [--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]]"
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -d|--diff SUBJECT [DATEDIFF-ARGS ...] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
+    echo
+    printf 'Usage: [EXECUTIONMARKER_OUTPUT_SEPARATOR=TEXT] %q %s\n' "$(basename "$1")" "... -q|--query SUBJECT [${comparisonArgs}] [--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]"
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... -D|--delete SUBJECT'
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... --drop'
 }
 printUsage()
 {
@@ -347,19 +354,21 @@ parseMarker()
 
 printContext()
 {
-    printf '%s\n' "$markerContext"
+    printf '%s%s' "$markerContext" "$EXECUTIONMARKER_OUTPUT_SEPARATOR"
 }
 
 printTimestamp()
 {
-    printf '%s\n' "$markerTimestamp"
+    printf '%s%s' "$markerTimestamp" "$EXECUTIONMARKER_OUTPUT_SEPARATOR"
 }
 
 printAdditionalInformation()
 {
-    local printFunction; for printFunction in "${additionalInformation[@]}"
+    local i; for ((i = 0; i < ${#additionalInformation[@]}; i++))
     do
-	$printFunction
+	((i + 1 == ${#additionalInformation[@]})) \
+	    && EXECUTIONMARKER_OUTPUT_SEPARATOR=$'\n'
+	"${additionalInformation[$i]}"
     done
 }
 
@@ -400,17 +409,18 @@ timediff()
     fi >&2
 
     readMarker || return $?
-    printTimeDiff
+    EXECUTIONMARKER_OUTPUT_SEPARATOR=$'\n' printTimeDiff
 }
 
 printTimeDiff()
 {
     if [ ${#datediffArgs[@]} -eq 0 -a ${#datediffOutputArgs[@]} -eq 0 ]; then
-	printf '%d\n' $((NOW - markerTimestamp))
+	printf '%d%s' $((NOW - markerTimestamp)) "$EXECUTIONMARKER_OUTPUT_SEPARATOR"
 	return 0
     fi
 
-    $DATEDIFF --output-inverted "${datediffArgs[@]}" "${datediffOutputArgs[@]}" "@$markerTimestamp"
+    local timediff; timediff="$($DATEDIFF --output-inverted "${datediffArgs[@]}" "${datediffOutputArgs[@]}" "@$markerTimestamp")" || return $?
+    printf '%s%s' "$timediff" "$EXECUTIONMARKER_OUTPUT_SEPARATOR"
 }
 
 lasttime()
@@ -423,15 +433,16 @@ lasttime()
     fi >&2
 
     readMarker || return $?
-    printLastTime
+    EXECUTIONMARKER_OUTPUT_SEPARATOR=$'\n' printLastTime
 }
 
 printLastTime()
 {
     if [ -n "${dateFormat+t}" ]; then
-	date --date "@$markerTimestamp" ${dateFormat:+"+$dateFormat"}
+	local lasttime; lasttime="$(date --date "@$markerTimestamp" ${dateFormat:+"+$dateFormat"})" || return 3
+	printf '%s%s' "$lasttime" "$EXECUTIONMARKER_OUTPUT_SEPARATOR"
     else
-	printf '%d\n' "$markerTimestamp"
+	printf '%d%s' "$markerTimestamp" "$EXECUTIONMARKER_OUTPUT_SEPARATOR"
     fi
 }
 
