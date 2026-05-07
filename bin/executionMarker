@@ -21,7 +21,7 @@ shopt -qs extglob
 
 printShortUsage()
 {
-    local comparisonArgs="$($DATEDIFF --get-short-usage comparisons)"
+    local comparisonArgs="$($DATEDIFF --get-short-usage comparisons 2>/dev/null)"
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
