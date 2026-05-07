@@ -27,10 +27,10 @@ printShortUsage()
     printf 'Usage: %q %s\n' "$(basename "$1")" '[--basedir DIR|--base-type config|data|runtime|cache|temp] [-n|--namespace NAMESPACE] -g|--group GROUP [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... (--start-read-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--start-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--upgrade-to-write-transaction OWNER-ID [--transaction-timeout TX-TIMEOUT]|--end-transaction OWNER-ID|--abort-write-transaction OWNER-ID) [--timeout SECONDS] [--silence-transaction-errors]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '... [(-x|--transactional [--transaction-timeout TX-TIMEOUT]|--within-transaction OWNER-ID|-X|--no-transaction) [--timeout SECONDS] [--silence-transaction-errors]] ...'
-    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [${comparisonArgs}] [-x|--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -u|--update SUBJECT [-C|--keep-context|-c|--context CONTEXT|-|--increment-context] [-T|--timestamp EPOCH] [${comparisonArgs}] [--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]]"
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -d|--diff SUBJECT [DATEDIFF-ARGS ...] [-f|--fallback-subject FALLBACK-SUBJECT]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -t|--time SUBJECT [--format DATE-FORMAT|""] [-f|--fallback-subject FALLBACK-SUBJECT]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -q|--query SUBJECT [${comparisonArgs}] [-x|--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "    ... -q|--query SUBJECT [${comparisonArgs}] [--get-context] [--get-timestamp] [--get-time DATE-FORMAT|\"\"] [--get-diff [DATEDIFF-ARGS ...]] [-f|--fallback-subject FALLBACK-SUBJECT [-F|--fallback-on-time]]"
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... -D|--delete SUBJECT'
     printf 'Usage: %q %s\n' "$(basename "$1")" '    ... --drop'
 }
@@ -91,7 +91,7 @@ HELPDESCRIPTION
 				compared through datediff options.
 				Returns 1 if that comparison fails or 4 if no
 				record for SUBJECT exists.
-    --get-context|-x		Prints the recorded CONTEXT for SUBJECT (if it
+    --get-context		Prints the recorded CONTEXT for SUBJECT (if it
 				exists).
     --get-timestamp		Prints the recorded timestamp (Unix epoch) for
 				SUBJECT (if it exists). Note: If this is the
@@ -256,7 +256,7 @@ do
 	--keep-context|-C)	shift; isKeepContext=t;;
 	--timestamp|-T)		shift; NOW="$1"; shift;;
 	--format)		shift; dateFormat="$1"; shift;;
-	--get-context|-x)	shift; additionalInformation+=(printContext);;
+	--get-context)		shift; additionalInformation+=(printContext);;
 	--get-timestamp)	shift; additionalInformation+=(printTimestamp);;
 	--get-time)		shift; additionalInformation+=(printLastTime); dateFormat="$1"; shift;;
 	--get-diff)		shift; additionalInformation+=(printTimeDiff);;
