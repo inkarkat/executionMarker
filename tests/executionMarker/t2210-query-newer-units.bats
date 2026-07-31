@@ -23,7 +23,7 @@ load canned_config
 }
 
 @test "invalid time unit gives error" {
-    run -2 executionMarker --timestamp "$NOW" --group samples --query foo --newer 12x
-    assert_line -n 0 'ERROR: Invalid AGE or TIMESLOT: "12x".'
+    run -2 executionMarker --timestamp "$NOW" --group samples --query foo --newer 12xy
+    assert_line -n 0 'ERROR: Illegal TIMESPAN or TIMESLOT: 12xy'
     assert_line -n 1 -e '^Usage:'
 }
