@@ -485,7 +485,7 @@ createView()
     local viewName; viewName="$(database --create-view)" || return $?
     transactionSupportingArgs=(--view "$viewName")
     transactionArgs=()
-    ! ${DEBUG:+debugenabled --invert-match --} ${DEBUG:-:} || trap 'database --drop 2>/dev/null' EXIT
+    trap '${DEBUG:+debugcommand --} database --drop 2>/dev/null' EXIT
 }
 
 calculateTimeRange()
