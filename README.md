@@ -15,7 +15,7 @@ It can then be queried whether the subject has been recorded already (and, more 
 * [inkarkat/date-extensions](https://github.com/inkarkat/date-extensions) for time difference formatting via `--output`
 * [inkarkat/shell-filters](https://github.com/inkarkat/shell-filters) for `--output precise` formatting
 * [inkarkat/shell-debugging](https://github.com/inkarkat/shell-debugging) for debugging (optional)
-* automated testing is done with _bats - Bash Automated Testing System_ (https://github.com/bats-core/bats-core)
+* automated testing is done with _Bats_ - [Bash Automated Testing System](https://github.com/bats-core/bats-core)
 
 ## Simple cache implementation
 
